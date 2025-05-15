@@ -4,9 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Superfun Draw</title>
+    <meta property="og:title" content="Superfun Draw">
+    <meta name="twitter:title" content="Superfun Draw">
+    <meta property="og:description" content="Draw multiple pictures with AI at once">
+    <meta name="twitter:description" content="Draw multiple pictures with AI at once">
+    <meta property="og:url" content="https://draw.superfun.games">
+    <meta property="og:type" content="website">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" href="/touch-icon.png">
     <link rel="manifest" href="/manifest.json">
+    <meta property="og:image" content="/unfurl.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="/unfurl.png">
     <link rel="stylesheet" href="/build.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.0/jspdf.umd.min.js"></script>
     <script>
@@ -224,9 +233,9 @@
             <div class="mt-2 grid grid-cols-1">
               <select id="preset" name="preset" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
                 <option selected>Coloring Book</option>
-                <option>Photo (Coming Soon)</option>
-                <option>Anime (Coming Soon)</option>
-                <option>Logos and Icons (Coming Soon)</option>
+                <option disabled>Photo (Coming Soon)</option>
+                <option disabled>Anime (Coming Soon)</option>
+                <option disabled>Logos and Icons (Coming Soon)</option>
               </select>
               <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
                 <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -235,15 +244,12 @@
           </div>
 
           <div class="relative bg-white">
-            <label for="character" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Character</label>
+            <label for="model" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Model</label>
             <div class="mt-2 grid grid-cols-1">
-              <select id="character" name="character" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
-                <option selected>Any</option>
-                <option>Boy</option>
-                <option>Girl</option>
-                <option>Robot</option>
-                <option>Dog</option>
-                <option>Cat</option>
+              <select id="model" name="model" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option selected>gpt-image-1</option>
+                <option>dall-e-3</option>
+                <option>dall-e-2</option>
               </select>
               <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
                 <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -252,14 +258,12 @@
           </div>
 
           <div class="relative bg-white">
-            <label for="age" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Age</label>
+            <label for="ratio" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Aspect Ratio</label>
             <div class="mt-2 grid grid-cols-1">
-              <select id="age" name="age" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
-                <option>Toddler</option>
-                <option selected>Kid</option>
-                <option>Teen</option>
-                <option>Adult</option>
-                <option>Oldie</option>
+              <select id="ratio" name="ratio" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option>Square</option>
+                <option selected>Portrait (tall)</option>
+                <option>Landscape (wide)</option>
               </select>
               <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
                 <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -268,15 +272,14 @@
           </div>
 
           <div class="relative bg-white">
-            <label for="hair" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Hair</label>
+            <label for="quality" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Quality</label>
             <div class="mt-2 grid grid-cols-1">
-              <select id="hair" name="hair" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
-                <option>Short</option>
-                <option selected>Medium</option>
-                <option>Curly</option>
-                <option>Long</option>
-                <option>Bald</option>
-                <option>Ponytail</option>              
+              <select id="quality" name="quality" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option>Auto</option>
+                <option selected>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+                
               </select>
               <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
                 <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -343,7 +346,7 @@
             </div>
     
             <div class="return-group">
-                <div id="canvas-1" class="canvas p-4 w-full bg-gray-50 border-2 border-gray-300 rounded-lg aspect-[8.5/11] flex flex-col justify-center items-center">
+                <div id="canvas-1" class="canvas p-4 w-full bg-gray-50 border-2 border-gray-300 rounded-lg aspect-square flex flex-col justify-center items-center">
                 <div class="empty flex flex-col items-center gap-2 opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />

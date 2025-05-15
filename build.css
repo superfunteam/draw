@@ -315,8 +315,8 @@
   .inline {
     display: inline;
   }
-  .aspect-\[8\.5\/11\] {
-    aspect-ratio: 8.5/11;
+  .aspect-square {
+    aspect-ratio: 1 / 1;
   }
   .size-0\.5 {
     width: calc(var(--spacing) * 0.5);
