@@ -102,6 +102,17 @@ document.querySelectorAll('.actions .draw').forEach(button => {
         const emptyMessage = canvas.querySelector('.empty');
         const loader = canvas.querySelector('.loader');
         
+        // Get quality setting
+        const qualitySelect = document.getElementById('quality');
+        let qualityValue = 'low'; // Default value
+        if (qualitySelect) {
+            const selectedQuality = qualitySelect.value.toLowerCase();
+            const validQualities = ['low', 'medium', 'high', 'auto'];
+            if (validQualities.includes(selectedQuality)) {
+                qualityValue = selectedQuality;
+            }
+        }
+        
         // Hide any existing API-generated image (but not the loader image)
         const existingApiImg = canvas.querySelector('img:not(.loader img)');
         if (existingApiImg) {
@@ -142,7 +153,7 @@ document.querySelectorAll('.actions .draw').forEach(button => {
                 body: JSON.stringify({
                     model: "gpt-image-1",
                     size: "1024x1536",
-                    quality: "low",
+                    quality: qualityValue,
                     output_compression: 50,
                     output_format: "webp",
                     prompt: `As a child's coloring book artist, draw a simple coloring book sheet that shows: ${prompt}. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color.`
@@ -303,6 +314,17 @@ function attachButtonListeners(drawGroup) {
             const loader = canvas.querySelector('.loader');
             const svgIcon = newDrawButton.querySelector('svg');
             
+            // Get quality setting
+            const qualitySelect = document.getElementById('quality');
+            let qualityValue = 'low'; // Default value
+            if (qualitySelect) {
+                const selectedQuality = qualitySelect.value.toLowerCase();
+                const validQualities = ['low', 'medium', 'high', 'auto'];
+                if (validQualities.includes(selectedQuality)) {
+                    qualityValue = selectedQuality;
+                }
+            }
+            
             // Hide any existing API-generated image (but not the loader image)
             const existingApiImg = canvas.querySelector('img:not(.loader img)');
             if (existingApiImg) {
@@ -335,7 +357,7 @@ function attachButtonListeners(drawGroup) {
                     body: JSON.stringify({
                         model: "gpt-image-1",
                         size: "1024x1536",
-                        quality: "low",
+                        quality: qualityValue,
                         output_compression: 50,
                         output_format: "webp",
                         prompt: `As a child's coloring book artist, draw a simple coloring book sheet that shows: ${prompt}. DO NOT include any text in the image. DO NOT use any colors other than black and white.`

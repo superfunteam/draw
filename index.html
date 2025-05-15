@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Superfun Draw</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <meta property="og:title" content="Superfun Draw">
     <meta name="twitter:title" content="Superfun Draw">
     <meta property="og:description" content="Draw multiple pictures with AI at once">
@@ -38,7 +41,7 @@
             .catch(error => console.error('Error fetching API key:', error));
     </script>
 </head>
-<body class="h-full">
+<body class="h-full font-sans">
 <div>
   <!-- Off-canvas menu for mobile -->
   <div class="relative z-50 lg:hidden hidden" role="dialog" aria-modal="true">
@@ -317,7 +320,7 @@
             <div class="input-group">
               <div>
                 <div class="relative">
-                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
+                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
                     
                     <div class="actions absolute bottom-2 left-2 flex flex-row gap-2">
                         <button class="ai improve bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1">
