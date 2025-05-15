@@ -210,7 +210,7 @@ document.querySelectorAll('.actions .draw').forEach(button => {
 
                 // Create new image as direct child of canvas
                 const img = document.createElement('img');
-                img.className = 'w-full h-full object-contain';
+                img.className = 'w-full h-full object-contain api-image';
                 img.src = `data:image/png;base64,${data.data[0].b64_json}`;
                 img.alt = prompt;
                 canvas.appendChild(img);
@@ -429,7 +429,7 @@ function attachButtonListeners(drawGroup) {
 
                     // Create new image as direct child of canvas
                     const img = document.createElement('img');
-                    img.className = 'w-full h-full object-contain';
+                    img.className = 'w-full h-full object-contain api-image';
                     img.src = `data:image/png;base64,${data.data[0].b64_json}`;
                     img.alt = prompt;
                     canvas.appendChild(img);
@@ -811,4 +811,186 @@ document.getElementById('make-pdf').addEventListener('click', async () => {
     
     // Save the PDF
     doc.save('superfun-coloring-book.pdf');
+});
+
+// Lightbox Functionality
+const lightboxModal = document.getElementById('lightbox-modal');
+const lightboxImage = document.getElementById('lightbox-image');
+const lightboxClose = document.getElementById('lightbox-close');
+const lightboxPrev = document.getElementById('lightbox-prev');
+const lightboxNext = document.getElementById('lightbox-next');
+const drawingsContainerForLightbox = document.querySelector('.drawings'); // Event delegation target
+
+let currentLightboxImageIndex = 0;
+let galleryApiImages = [];
+
+function updateLightboxNav() {
+    lightboxPrev.disabled = currentLightboxImageIndex === 0;
+    lightboxNext.disabled = currentLightboxImageIndex === galleryApiImages.length - 1;
+}
+
+function openLightbox(imageElement) {
+    galleryApiImages = Array.from(document.querySelectorAll('.api-image'));
+    const clickedImageSrc = imageElement.src;
+    currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
+
+    if (currentLightboxImageIndex === -1) { // Should not happen if called correctly
+        console.error("Clicked image not found in galleryApiImages");
+        return;
+    }
+
+    lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+    lightboxModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling while lightbox is open
+    updateLightboxNav();
+}
+
+function closeLightbox() {
+    lightboxModal.classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scrolling
+    galleryApiImages = [];
+    currentLightboxImageIndex = 0;
+}
+
+function showNextImage() {
+    if (currentLightboxImageIndex < galleryApiImages.length - 1) {
+        currentLightboxImageIndex++;
+        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        updateLightboxNav();
+    }
+}
+
+function showPrevImage() {
+    if (currentLightboxImageIndex > 0) {
+        currentLightboxImageIndex--;
+        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        updateLightboxNav();
+    }
+}
+
+if (drawingsContainerForLightbox) {
+    drawingsContainerForLightbox.addEventListener('click', (e) => {
+        if (e.target && e.target.classList.contains('api-image')) {
+            openLightbox(e.target);
+        }
+    });
+}
+
+lightboxClose?.addEventListener('click', closeLightbox);
+lightboxPrev?.addEventListener('click', showPrevImage);
+lightboxNext?.addEventListener('click', showNextImage);
+
+document.addEventListener('keydown', (e) => {
+    if (!lightboxModal.classList.contains('hidden')) { // If lightbox is open
+        if (e.key === 'Escape') {
+            closeLightbox();
+        } else if (e.key === 'ArrowRight') {
+            showNextImage();
+        } else if (e.key === 'ArrowLeft') {
+            showPrevImage();
+        }
+    }
+});
+
+// Tokens Modal Functionality
+const tokensLink = document.querySelector('.tokens');
+const tokensModal = document.getElementById('tokens-modal');
+const tokensModalBackdrop = document.getElementById('tokens-modal-backdrop');
+const tokensModalPanel = document.getElementById('tokens-modal-panel');
+const tokensModalCancelButton = document.getElementById('tokens-modal-cancel-button');
+const tokensModalBuyButton = document.getElementById('tokens-modal-buy-button');
+
+function openTokensModal() {
+    if (!tokensModal || !tokensModalBackdrop || !tokensModalPanel) return;
+
+    tokensModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Backdrop: Apply target state and transition classes
+    tokensModalBackdrop.classList.remove('opacity-0');
+    tokensModalBackdrop.classList.add('opacity-100', 'ease-out', 'duration-300');
+
+    // Panel: Reset to ensure "from" state is clean, then apply transition and "to" state
+    tokensModalPanel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100'); // remove any "to" classes
+    tokensModalPanel.classList.add('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95'); // ensure "from" classes
+    
+    tokensModalPanel.classList.add('ease-out', 'duration-300'); // Add transition behavior
+
+    requestAnimationFrame(() => {
+        // Apply "to" state, triggering transition
+        tokensModalPanel.classList.remove('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95');
+        tokensModalPanel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
+    });
+
+    // Clean up transition classes after animation
+    setTimeout(() => {
+        tokensModalBackdrop.classList.remove('ease-out', 'duration-300');
+        tokensModalPanel.classList.remove('ease-out', 'duration-300');
+    }, 300); 
+}
+
+function closeTokensModal() {
+    if (!tokensModal || !tokensModalBackdrop || !tokensModalPanel) return;
+
+    document.body.style.overflow = '';
+
+    // Add transition classes before changing to "from" state
+    tokensModalBackdrop.classList.add('ease-in', 'duration-200');
+    tokensModalPanel.classList.add('ease-in', 'duration-200');
+
+    // Trigger transition to "from" (hidden) state
+    tokensModalBackdrop.classList.remove('opacity-100');
+    tokensModalBackdrop.classList.add('opacity-0');
+
+    tokensModalPanel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
+    tokensModalPanel.classList.add('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95');
+
+    setTimeout(() => {
+        tokensModal.classList.add('hidden');
+        // Reset for next open: remove transition classes. "From" state is already set.
+        tokensModalBackdrop.classList.remove('ease-in', 'duration-200');
+        tokensModalPanel.classList.remove('ease-in', 'duration-200');
+    }, 200); 
+}
+
+if (tokensLink) {
+    tokensLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        openTokensModal();
+    });
+}
+
+if (tokensModalCancelButton) {
+    tokensModalCancelButton.addEventListener('click', closeTokensModal);
+}
+
+if (tokensModalBuyButton) {
+    tokensModalBuyButton.addEventListener('click', (e) => {
+        e.target.textContent = "Coming Soon";
+        // Optionally disable the button after click
+        // e.target.disabled = true;
+    });
+}
+
+if (tokensModalBackdrop) {
+    tokensModalBackdrop.addEventListener('click', closeTokensModal);
+}
+
+// Modify existing keydown listener to also handle tokens modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+            closeLightbox();
+        } else if (tokensModal && !tokensModal.classList.contains('hidden')) {
+            closeTokensModal();
+        }
+    } 
+    // Keep lightbox arrow navigation if lightbox is open
+    if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+      if (e.key === 'ArrowRight') {
+          showNextImage();
+      } else if (e.key === 'ArrowLeft') {
+          showPrevImage();
+      }
+    }
 }); 
