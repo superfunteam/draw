@@ -1,0 +1,13 @@
+[build]
+  publish = "."
+
+[context.production]
+  environment = { OPENAI_API = "" }
+
+[context.development]
+  environment = { OPENAI_API = "" }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200 

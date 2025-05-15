@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superfun Draw</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/build.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.0/jspdf.umd.min.js"></script>
+    <script>
+        // Fetch API key from serverless function
+        fetch('/.netlify/functions/get-env')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.apiKey) {
+                    window.OPENAI_API_KEY = data.apiKey;
+                    console.log('API Key loaded successfully.');
+                } else {
+                    console.error('API Key not found in response from /get-env');
+                }
+            })
+            .catch(error => console.error('Error fetching API key:', error));
+    </script>
+</head>
+<body class="h-full">
+<div>
+  <!-- Off-canvas menu for mobile -->
+  <div class="relative z-50 lg:hidden hidden" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/80 transition-opacity ease-linear duration-300" aria-hidden="true"></div>
+
+    <div class="fixed inset-0 flex">
+      <div class="relative mr-16 flex w-full max-w-xs flex-1">
+        <div class="absolute top-0 left-full flex w-16 justify-center pt-5">
+          <button type="button" class="close -m-2.5 p-2.5">
+            <span class="sr-only">Close sidebar</span>
+            <svg class="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Sidebar component for mobile -->
+        <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-2 ring-1 ring-white/10">
+          <div class="flex h-16 shrink-0 items-center">
+            <img class="h-8 w-auto" src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500" alt="Your Company">
+          </div>
+          <nav class="flex flex-1 flex-col">
+            <ul role="list" class="flex flex-1 flex-col gap-y-7">
+              <li>
+                <ul role="list" class="-mx-2 space-y-1">
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md bg-gray-800 p-2 text-sm/6 font-semibold text-white">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 shrink-0">
+                        <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h16.5A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6ZM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0 0 21 18v-1.94l-2.69-2.689a1.5 1.5 0 0 0-2.12 0l-.88.879.97.97a.75.75 0 1 1-1.06 1.06l-5.16-5.159a1.5 1.5 0 0 0-2.12 0L3 16.061Zm10.125-7.81a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z" clip-rule="evenodd" />
+                      </svg>
+                      
+                      Draw
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                      <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                      </svg>
+                      Team
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                      <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                      </svg>
+                      Projects
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <div class="text-xs/6 font-semibold text-gray-400">Your teams</div>
+                <ul role="list" class="-mx-2 mt-2 space-y-1">
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                      <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">H</span>
+                      <span class="truncate">Heroicons</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                      <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">T</span>
+                      <span class="truncate">Tailwind Labs</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                      <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">W</span>
+                      <span class="truncate">Workcation</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Static sidebar for desktop -->
+  <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6">
+      <div class="flex h-16 shrink-0 items-center gap-2 relative" style="left:-4px;">
+        <img class="size-8 w-auto" src="logo-mark.svg" alt="Your Company">
+        <p class="text-white"><strong>Superfun</strong> Draw</p>
+      </div>
+      <nav class="flex flex-1 flex-col">
+        <ul role="list" class="flex flex-1 flex-col gap-y-7">
+          <li>
+            <ul role="list" class="-mx-2 space-y-1">
+              <li>
+                <a href="#" class="group flex gap-x-3 rounded-md bg-gray-800 p-2 text-sm/6 font-semibold text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                      </svg>
+                  Draw
+                </a>
+              </li>
+              <li>
+                <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                  <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                  </svg>
+                  Projects
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <div class="text-xs/6 font-semibold text-gray-400">More</div>
+            <ul role="list" class="-mx-2 mt-2 space-y-1">
+              <li>
+                <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">?</span>
+                  <span class="truncate">Help</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://superfun.games" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">S</span>
+                  <span class="truncate">Superfun Games</span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/clarklab" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-[0.625rem] font-medium text-gray-400 group-hover:text-white">@</span>
+                  <span class="truncate">clarklab</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li class="-mx-6 mt-auto pb-2">
+            <a href="#" class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-white hover:bg-gray-800">
+              <span class="sr-only">Buy Tokens</span>
+              <span aria-hidden="true" class="flex flex-row items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                  Buy Tokens</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+
+  <div class="sticky top-0 z-40 flex items-center gap-x-6 bg-gray-900 px-4 py-4 shadow-xs sm:px-6 lg:hidden">
+    <button type="button" class="menu -m-2.5 p-2.5 text-gray-400 lg:hidden">
+      <span class="sr-only">Open sidebar</span>
+      <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+    </button>
+    <div class="flex-1 text-sm/6 font-semibold text-white">Dashboard</div>
+    <a href="#">
+      <span class="sr-only">Your profile</span>
+      <img class="size-8 rounded-full bg-gray-800" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+    </a>
+  </div>
+
+  <main class="lg:pl-72">
+
+    <div class="">
+
+      <div class="settings-panel py-6 flex flex-col px-4 sm:px-6 lg:px-8 bg-indigo-50 border-b border-indigo-200">
+        <div class="relative">
+          <div class="mt-2 grid grid-cols-1 relative">
+            <textarea id="prompt" name="prompt" rows="3" class="col-start-1 row-start-1 w-full appearance-none rounded-tl-lg rounded-tr-lg bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 outline-2 -outline-offset-2 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 resize-none" placeholder="Enter a coloring book prompt here (describe your story or idea, your kid or character, etc)..."></textarea>
+            <div class="actions absolute top-3 right-3 flex flex-row gap-2">
+                <button class="write bg-indigo-600 rounded-md p-1 pr-1.5 text-white flex flex-row gap-1 items-center justify-center hover:!text-indigo-600 hover:!bg-indigo-200">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5">
+                        <path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5ZM18 1.5a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5ZM16.5 15a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z" clip-rule="evenodd" />
+                      </svg>
+                      
+
+                      <span class="text-sm font-semibold">Write Story</span>
+                      
+                                                
+                </button>
+                
+            </div>
+        </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 divide-x divide-x-2 divide-gray-300 border-2 border-gray-300 border-t-0 rounded-bl-lg rounded-br-lg overflow-hidden">
+          <div class="relative bg-white">
+            <label for="preset" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Preset</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="preset" name="preset" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option selected>Coloring Book</option>
+                <option>Photo (Coming Soon)</option>
+                <option>Anime (Coming Soon)</option>
+                <option>Logos and Icons (Coming Soon)</option>
+              </select>
+              <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+                <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="relative bg-white">
+            <label for="character" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Character</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="character" name="character" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option selected>Any</option>
+                <option>Boy</option>
+                <option>Girl</option>
+                <option>Robot</option>
+                <option>Dog</option>
+                <option>Cat</option>
+              </select>
+              <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+                <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="relative bg-white">
+            <label for="age" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Age</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="age" name="age" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option>Toddler</option>
+                <option selected>Kid</option>
+                <option>Teen</option>
+                <option>Adult</option>
+                <option>Oldie</option>
+              </select>
+              <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+                <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="relative bg-white">
+            <label for="hair" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Hair</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="hair" name="hair" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option>Short</option>
+                <option selected>Medium</option>
+                <option>Curly</option>
+                <option>Long</option>
+                <option>Bald</option>
+                <option>Ponytail</option>              
+              </select>
+              <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+                <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="relative bg-white">
+            <label for="drawings" class="block text-xs/6 pl-3 font-medium text-gray-90 absolute top-1.5 uppercase font-semibold text-indigo-600">Number of Pages</label>
+            <div class="mt-2 grid grid-cols-1">
+              <select id="drawings" name="drawings" class="col-start-1 row-start-1 w-full appearance-none bg-white py-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 focus:outline-none sm:text-sm/6">
+                <option selected>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+                <option>9</option>
+                <option>10</option>
+              </select>
+              <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+                <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawings grid grid-cols-1 gap-6 mt-6 px-4 sm:px-6 lg:px-8 pb-20">
+
+        <div id="draw-group-1" class="draw-group w-full grid grid-cols-1 md:grid-cols-2 gap-3">
+
+            <div class="input-group">
+              <div>
+                <div class="relative">
+                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
+                    
+                    <div class="actions absolute bottom-2 left-2 flex flex-row gap-2">
+                        <button class="ai improve bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                                <path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5ZM18 1.5a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5ZM16.5 15a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z" clip-rule="evenodd" />
+                              </svg>
+                              
+
+                              <span class="text-xs font-semibold">Improve</span>
+                              
+                                                        
+                        </button>
+                        <button class="draw group bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1 relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+                              </svg>
+                            
+                              <span class="label text-xs font-semibold">Draw</span>
+                              <span class="draw-all text-xs text-indigo-600 absolute -right-2 group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600">Draw All</span>
+                        </button>
+                    </div>
+
+                </div>
+                </div>
+            </div>
+    
+            <div class="return-group">
+                <div id="canvas-1" class="canvas p-4 w-full bg-gray-50 border-2 border-gray-300 rounded-lg aspect-[8.5/11] flex flex-col justify-center items-center">
+                <div class="empty flex flex-col items-center gap-2 opacity-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
+                      </svg>
+                      <div>
+                        <p>Ready and waiting...</p>
+                      </div>
+                </div>
+
+                <div class="loader hidden">
+                    <img src="loader.svg" alt="Loading..." class="size-8">
+                </div>
+
+                </div>
+            </div>
+    
+          </div>
+
+
+      </div>
+      
+    </div>
+
+    <div class="save-pdf-banner opacity-0 pointer-events-none fixed left-0 lg:left-72 right-0 bottom-0 transition-all duration-300">
+        <div class="flex items-center justify-between gap-x-6 bg-indigo-600 px-6 py-2.5 sm:px-8">
+          <p class="text-sm/6 text-white w-full">
+           
+              <strong class="font-bold">Ready to print?</strong><svg viewBox="0 0 2 2" class="mx-2 inline size-0.5 fill-current" aria-hidden="true"><circle cx="1" cy="1" r="1" /></svg>Get your PDF now <svg viewBox="0 0 2 2" class="mx-2 inline size-0.5 fill-current" aria-hidden="true"><circle cx="1" cy="1" r="1" /></svg> Instant download&nbsp;<span aria-hidden="true">&rarr;</span>
+            
+          </p>
+          <div class="flex flex-1 justify-end">
+            <button id="make-pdf" type="button" class="p-3 py-2 focus-visible:outline-offset-[-4px] bg-white text-indigo-600 rounded-md font-bold flex flex-row gap-2 items-center shrink-0 hover:bg-indigo-100 hover:text-indigo-900 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  Make PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html> 

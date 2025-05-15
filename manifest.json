@@ -1,0 +1,17 @@
+{
+    "name": "Superfun Draw",
+    "short_name": "Superfun Draw",
+    "description": "Draw illustrations with AI",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4C3AED",
+    "icons": [
+        {
+            "src": "touch-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+} 

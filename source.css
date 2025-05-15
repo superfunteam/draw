@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+.canvas{
+    @apply relative overflow-hidden border-dashed;
+}
+
+.canvas > img:last-child{
+    @apply border-2 border-indigo-50;
+}
+
+.actions button{
+    @apply hover:bg-indigo-700 hover:text-white transition-colors duration-300 hover:cursor-pointer;
+}
