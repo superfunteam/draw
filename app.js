@@ -131,6 +131,21 @@ document.querySelectorAll('.actions .draw').forEach(button => {
             }
         }
         
+        // Get preset and define prompt rules
+        const presetSelect = document.getElementById('preset');
+        let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color."; // Default
+        if (presetSelect) {
+            switch (presetSelect.value) {
+                case "Photo":
+                    promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors";
+                    break;
+                case "Coloring Book":
+                default:
+                    promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color.";
+                    break;
+            }
+        }
+        
         // Hide any existing API-generated image (but not the loader image)
         const existingApiImg = canvas.querySelector('img:not(.loader img)');
         if (existingApiImg) {
@@ -174,7 +189,7 @@ document.querySelectorAll('.actions .draw').forEach(button => {
                     quality: qualityValue,
                     output_compression: 50,
                     output_format: "webp",
-                    prompt: `As a child's coloring book artist, draw a simple coloring book sheet that shows: ${prompt}. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color.`
+                    prompt: `${promptPrefix} that shows: ${prompt}.`
                 })
             });
 
@@ -264,68 +279,76 @@ function attachButtonListeners(drawGroup) {
                 e.stopPropagation();
                 
                 // Get all draw buttons
-                const buttons = Array.from(document.querySelectorAll('.actions .draw'));
-                console.log('Total buttons found:', buttons.length);
+                const buttons = Array.from(document.querySelectorAll('.actions .draw:not(:disabled)')); // Only non-disabled
+                console.log('Total non-disabled buttons found for Draw All:', buttons.length);
                 
-                // Process buttons in batches of 5
                 for (let i = 0; i < buttons.length; i += 5) {
-                    // Get current batch of 5 buttons (or remaining buttons if less than 5)
                     const batch = buttons.slice(i, i + 5);
-                    console.log('Processing batch starting at index:', i);
-                    console.log('Batch size:', batch.length);
+                    console.log('Processing batch starting at index:', i, 'Batch size:', batch.length);
                     
                     // Click all buttons in the current batch simultaneously
+                    // The individual click handler will clear any countdowns and set "Drawing..."
                     batch.forEach(btn => btn.click());
                     
-                    // If there are more buttons after this batch, update their labels to "Waiting..."
                     if (i + 5 < buttons.length) {
                         const remainingButtons = buttons.slice(i + 5);
-                        console.log('Remaining buttons to update:', remainingButtons.length);
+                        console.log('Remaining buttons to set to waiting/countdown:', remainingButtons.length);
                         
                         remainingButtons.forEach(btn => {
-                            // Find the label span within this specific button
                             const label = btn.querySelector('.label');
-                            console.log('Found label element:', label);
                             if (label) {
-                                console.log('Updating label from:', label.textContent, 'to: Waiting...');
-                                label.textContent = 'Waiting...';
+                                // Clear any existing countdown for this button before starting a new one
+                                if (btn.dataset.countdownIntervalId) {
+                                    clearInterval(parseInt(btn.dataset.countdownIntervalId));
+                                    delete btn.dataset.countdownIntervalId;
+                                }
+
+                                let countdown = 65; // Start countdown from 65 seconds
+                                label.textContent = `${countdown}s Waiting...`;
                                 
-                                // Get the draw group for this button
-                                const drawGroup = btn.closest('.draw-group');
-                                if (drawGroup) {
-                                    const canvas = drawGroup.querySelector('.canvas');
+                                // Show loader for these waiting buttons as well
+                                const waitingDrawGroup = btn.closest('.draw-group');
+                                if (waitingDrawGroup) {
+                                    const canvas = waitingDrawGroup.querySelector('.canvas');
                                     const emptyMessage = canvas.querySelector('.empty');
                                     const loader = canvas.querySelector('.loader');
-                                    
-                                    // Hide empty message and show loader
                                     emptyMessage.classList.add('hidden');
                                     loader.classList.remove('hidden');
-                                    
-                                    console.log('Updated visibility for draw group:', drawGroup.id);
-                                    console.log('Empty message classes:', emptyMessage.className);
-                                    console.log('Loader classes:', loader.className);
                                 }
-                            } else {
-                                console.log('No label found in button');
+
+                                const intervalId = setInterval(() => {
+                                    countdown--;
+                                    if (countdown > 0) {
+                                        label.textContent = `${countdown}s Waiting...`;
+                                    } else {
+                                        label.textContent = 'Waiting...'; // Or some other state like 'Queued...'
+                                        clearInterval(intervalId);
+                                        delete btn.dataset.countdownIntervalId;
+                                    }
+                                }, 1000);
+                                btn.dataset.countdownIntervalId = intervalId.toString();
                             }
                         });
                         
-                        // Wait 65 seconds before next batch
                         console.log('Waiting 65 seconds before next batch...');
                         await new Promise(resolve => setTimeout(resolve, 65000));
                     }
                 }
                 
-                // Show the save PDF banner after all batches are complete
                 const savePdfBanner = document.querySelector('.save-pdf-banner');
                 if (savePdfBanner) {
                     savePdfBanner.classList.remove('opacity-0', 'pointer-events-none');
                 }
-                
                 return;
             }
             
-            // Regular draw button click handling
+            // Regular draw button click handling (individual button)
+            // Clear countdown if one was running on this button
+            if (newDrawButton.dataset.countdownIntervalId) {
+                clearInterval(parseInt(newDrawButton.dataset.countdownIntervalId));
+                delete newDrawButton.dataset.countdownIntervalId;
+            }
+
             const textarea = drawGroup.querySelector('textarea');
             const canvas = drawGroup.querySelector('.canvas');
             const emptyMessage = canvas.querySelector('.empty');
@@ -357,6 +380,21 @@ function attachButtonListeners(drawGroup) {
                     case "Portrait (tall)":
                     default:
                         imageSize = "1024x1536";
+                        break;
+                }
+            }
+            
+            // Get preset and define prompt rules
+            const presetSelect = document.getElementById('preset');
+            let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color."; // Default
+            if (presetSelect) {
+                switch (presetSelect.value) {
+                    case "Photo":
+                        promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors";
+                        break;
+                    case "Coloring Book":
+                    default:
+                        promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color.";
                         break;
                 }
             }
@@ -396,7 +434,7 @@ function attachButtonListeners(drawGroup) {
                         quality: qualityValue,
                         output_compression: 50,
                         output_format: "webp",
-                        prompt: `As a child's coloring book artist, draw a simple coloring book sheet that shows: ${prompt}. DO NOT include any text in the image. DO NOT use any colors other than black and white.`
+                        prompt: `${promptPrefix} that shows: ${prompt}.`
                     })
                 });
 
