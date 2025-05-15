@@ -112,6 +112,24 @@ document.querySelectorAll('.actions .draw').forEach(button => {
                 qualityValue = selectedQuality;
             }
         }
+
+        // Get aspect ratio
+        const ratioSelect = document.getElementById('ratio');
+        let imageSize = "1024x1536"; // Default portrait
+        if (ratioSelect) {
+            switch (ratioSelect.value) {
+                case "Square":
+                    imageSize = "1024x1024";
+                    break;
+                case "Landscape (wide)":
+                    imageSize = "1536x1024";
+                    break;
+                case "Portrait (tall)":
+                default:
+                    imageSize = "1024x1536";
+                    break;
+            }
+        }
         
         // Hide any existing API-generated image (but not the loader image)
         const existingApiImg = canvas.querySelector('img:not(.loader img)');
@@ -152,7 +170,7 @@ document.querySelectorAll('.actions .draw').forEach(button => {
                 },
                 body: JSON.stringify({
                     model: "gpt-image-1",
-                    size: "1024x1536",
+                    size: imageSize,
                     quality: qualityValue,
                     output_compression: 50,
                     output_format: "webp",
@@ -324,6 +342,24 @@ function attachButtonListeners(drawGroup) {
                     qualityValue = selectedQuality;
                 }
             }
+
+            // Get aspect ratio
+            const ratioSelect = document.getElementById('ratio');
+            let imageSize = "1024x1536"; // Default portrait
+            if (ratioSelect) {
+                switch (ratioSelect.value) {
+                    case "Square":
+                        imageSize = "1024x1024";
+                        break;
+                    case "Landscape (wide)":
+                        imageSize = "1536x1024";
+                        break;
+                    case "Portrait (tall)":
+                    default:
+                        imageSize = "1024x1536";
+                        break;
+                }
+            }
             
             // Hide any existing API-generated image (but not the loader image)
             const existingApiImg = canvas.querySelector('img:not(.loader img)');
@@ -356,7 +392,7 @@ function attachButtonListeners(drawGroup) {
                     },
                     body: JSON.stringify({
                         model: "gpt-image-1",
-                        size: "1024x1536",
+                        size: imageSize,
                         quality: qualityValue,
                         output_compression: 50,
                         output_format: "webp",
@@ -698,12 +734,38 @@ document.getElementById('make-pdf').addEventListener('click', async () => {
         return;
     }
     
-    // Create PDF with 1024x1536 aspect ratio
+    // Determine PDF page size and orientation based on #ratio selection
+    const ratioSelect = document.getElementById('ratio');
+    let pageWidth = 1024;
+    let pageHeight = 1536;
+    let pdfOrientation = 'portrait';
+
+    if (ratioSelect) {
+        switch (ratioSelect.value) {
+            case "Square":
+                pageWidth = 1024;
+                pageHeight = 1024;
+                pdfOrientation = 'portrait'; // or 'landscape', square can be either
+                break;
+            case "Landscape (wide)":
+                pageWidth = 1536;
+                pageHeight = 1024;
+                pdfOrientation = 'landscape';
+                break;
+            case "Portrait (tall)":
+            default:
+                pageWidth = 1024;
+                pageHeight = 1536;
+                pdfOrientation = 'portrait';
+                break;
+        }
+    }
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({
-        orientation: 'portrait',
+        orientation: pdfOrientation,
         unit: 'px',
-        format: [1024, 1536]
+        format: [pageWidth, pageHeight]
     });
     
     // Process each image
@@ -719,8 +781,6 @@ document.getElementById('make-pdf').addEventListener('click', async () => {
         });
         
         // Calculate dimensions to maintain aspect ratio (like background: cover)
-        const pageWidth = 1024;
-        const pageHeight = 1536;
         const imgRatio = img.width / img.height;
         const pageRatio = pageWidth / pageHeight;
         
