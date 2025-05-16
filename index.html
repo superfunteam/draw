@@ -85,7 +85,7 @@
                     </a>
                   </li>
                   <li>
-                    <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                    <a href="#" class="group projcts-link flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
                       <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
                       </svg>
@@ -144,7 +144,7 @@
                 </a>
               </li>
               <li>
-                <a href="#" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
+                <a href="#" class="group projects-link flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-400 hover:bg-gray-800 hover:text-white">
                   <svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
                   </svg>
@@ -304,6 +304,20 @@
                 <option>8</option>
                 <option>9</option>
                 <option>10</option>
+                <option>11</option>
+                <option>12</option>
+                <option>13</option>
+                <option>14</option>
+                <option>15</option>
+                <option>16</option>
+                <option>17</option>
+                <option>18</option>
+                <option>19</option>
+                <option>20</option>
+                <option>21</option>
+                <option>22</option>
+                <option>23</option>
+                <option>24</option>
               </select>
               <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-end mb-2.5 justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
                 <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
@@ -315,12 +329,11 @@
 
       <div class="drawings grid grid-cols-1 gap-6 mt-6 px-4 sm:px-6 lg:px-8 pb-20">
 
-        <div id="draw-group-1" class="draw-group w-full grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div id="draw-group-1" class="draw-group w-full grid grid-cols-1 md:grid-cols-10 gap-3">
 
-            <div class="input-group">
-              <div>
-                <div class="relative">
-                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white resize-none" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
+            <div class="input-group md:col-span-6 h-full">
+                <div class="relative h-full">
+                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full h-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white resize-none" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
                     
                     <div class="actions w-full absolute bottom-2 left-0 right-0 px-2 flex flex-row gap-2">
                         <button class="ai improve bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1">
@@ -337,21 +350,20 @@
                               </svg>
                             
                               <span class="label text-xs font-semibold">Draw</span>
-                              <span class="draw-all text-xs text-indigo-600 absolute -right-2 group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600">Draw All</span>
+                              <span class="draw-all text-xs text-indigo-600 absolute -right-2 group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600 font-semibold">All</span>
                         </button>
                         <div class="image-prompt hidden w-full flex items-center justify-end gap-1.5">
-                          <div class="prompt-image-preview image-1 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
-                          <div class="prompt-image-preview image-2 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
-                          <div class="prompt-image-preview image-3 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
-                          <div class="prompt-image-preview image-4 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
+                          <div class="prompt-image-preview image-1 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center transition-all duration-150 ease-in-out border-1 border-indigo-200"></div>
+                          <div class="prompt-image-preview image-2 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center transition-all duration-150 ease-in-out border-1 border-indigo-200"></div>
+                          <div class="prompt-image-preview image-3 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center transition-all duration-150 ease-in-out border-1 border-indigo-200"></div>
+                          <div class="prompt-image-preview image-4 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center transition-all duration-150 ease-in-out border-1 border-indigo-200"></div>
                         </div>
                     </div>
 
                 </div>
-                </div>
             </div>
     
-            <div class="return-group">
+            <div class="return-group md:col-span-4">
                 <div id="canvas-1" class="canvas p-4 w-full bg-gray-50 border-2 border-gray-300 rounded-lg aspect-square flex flex-col justify-center items-center">
                 <div class="empty flex flex-col items-center gap-2 opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -376,7 +388,15 @@
       
     </div>
 
-    <div class="save-pdf-banner opacity-0 pointer-events-none fixed left-0 lg:left-72 right-0 bottom-0 transition-all duration-300">
+    <!-- FAB to add new draw group -->
+    <button type="button" class="add-draw-group fixed z-30 right-6 lg:right-8 bottom-6 lg:bottom-8 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 cursor-pointer hover:scale-110 origin-center">
+      <span class="sr-only">Add new draw group</span>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+    </button>
+
+    <div class="save-pdf-banner opacity-0 pointer-events-none fixed left-0 lg:left-72 right-0 bottom-0 transition-all duration-300 translate-y-full">
         <div class="flex items-center justify-between gap-x-6 bg-indigo-600 px-6 py-2.5 sm:px-8">
           <p class="text-sm/6 text-white w-full">
            
@@ -397,18 +417,39 @@
   </main>
 </div>
 
+<!-- Projects Modal -->
+<div id="projects-modal" class="hidden relative z-[98]" aria-labelledby="projects-modal-title" role="dialog" aria-modal="true">
+  <div class="modal-backdrop fixed inset-0 bg-gray-500/75 transition-opacity opacity-0" aria-hidden="true"></div>
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div class="modal-panel relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all opacity-0 translate-y-12 sm:translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:max-w-md sm:p-6 pointer-events-auto">
+        <div>
+          <div class="mt-3 text-center sm:mt-5">
+            <h3 class="text-lg font-semibold leading-6 text-gray-900" id="projects-modal-title">Projects</h3>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500">Your projects will be listed here soon.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 sm:mt-6">
+          <button type="button" data-modal-action="close" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Tokens Modal -->
 <div id="tokens-modal" class="hidden relative z-[99]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
   <!-- Background backdrop -->
-  <div id="tokens-modal-backdrop" class="fixed inset-0 bg-gray-500/75 transition-opacity opacity-0" aria-hidden="true"></div>
+  <div id="tokens-modal-backdrop" class="modal-backdrop fixed inset-0 bg-gray-500/75 transition-opacity opacity-0" aria-hidden="true"></div>
 
-  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto pointer-events-none">
     <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
       <!-- Modal panel -->
-      <div id="tokens-modal-panel" class="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all opacity-0 translate-y-12 sm:translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+      <div id="tokens-modal-panel" class="modal-panel relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all opacity-0 translate-y-12 sm:translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:max-w-lg sm:p-6 pointer-events-auto">
         <div>
           <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
-            <!-- Heroicon - Check -->
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-green-600">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" />
@@ -423,7 +464,7 @@
         </div>
         <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
           <button id="tokens-modal-buy-button" type="button" class="buy-tokens inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">BUY TOKENS</button>
-          <button id="tokens-modal-cancel-button" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+          <button id="tokens-modal-cancel-button" type="button" data-modal-action="close" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
         </div>
       </div>
     </div>
@@ -450,6 +491,7 @@
   </button>
 </div>
 
+<script src="modals.js"></script>
 <script src="app.js"></script>
 </body>
 </html> 

@@ -144,7 +144,23 @@ function attachButtonListeners(drawGroup) {
 
                         targetPreviewDiv.dataset.pastedImageUrl = e.target.result;
                         targetPreviewDiv.style.backgroundImage = `url(${e.target.result})`;
-                        targetPreviewDiv.classList.remove('bg-indigo-100'); 
+                        targetPreviewDiv.classList.remove('bg-indigo-100');
+                        
+                        // Animation: Start small and transparent
+                        targetPreviewDiv.classList.add('opacity-0', 'scale-[.75]');
+
+                        requestAnimationFrame(() => {
+                            // Animate to pop-out (larger and opaque)
+                            targetPreviewDiv.classList.remove('opacity-0', 'scale-[.75]');
+                            targetPreviewDiv.classList.add('opacity-100', 'scale-[1.25]');
+
+                            // After pop-out animation, settle to normal size
+                            setTimeout(() => {
+                                targetPreviewDiv.classList.remove('scale-[1.25]');
+                                targetPreviewDiv.classList.add('scale-100');
+                            }, 150); // Matches the transition duration
+                        });
+                        
                         console.log(`Image pasted into slot ${currentPasteSlotIndex} for draw group: ${drawGroup.id}`);
                         
                         // Update next paste slot index only if current is <= 4
@@ -231,7 +247,13 @@ function attachButtonListeners(drawGroup) {
                 
                 const savePdfBanner = document.querySelector('.save-pdf-banner');
                 if (savePdfBanner) {
-                    savePdfBanner.classList.remove('opacity-0', 'pointer-events-none');
+                    savePdfBanner.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
+                    savePdfBanner.classList.add('translate-y-0');
+                    // Move FAB up if it exists
+                    if (fabAddDrawGroup) {
+                        fabAddDrawGroup.classList.remove('bottom-6', 'lg:bottom-8');
+                        fabAddDrawGroup.classList.add('bottom-20'); 
+                    }
                 }
                 return;
             }
@@ -370,7 +392,13 @@ function attachButtonListeners(drawGroup) {
                     // Show the save PDF banner
                     const savePdfBanner = document.querySelector('.save-pdf-banner');
                     if (savePdfBanner) {
-                        savePdfBanner.classList.remove('opacity-0', 'pointer-events-none');
+                        savePdfBanner.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
+                        savePdfBanner.classList.add('translate-y-0');
+                        // Move FAB up if it exists
+                        if (fabAddDrawGroup) {
+                            fabAddDrawGroup.classList.remove('bottom-6', 'lg:bottom-8');
+                            fabAddDrawGroup.classList.add('bottom-20'); 
+                        }
                     }
                 } else {
                     throw new Error('No image data received from API');
@@ -764,22 +792,24 @@ function openLightbox(imageElement) {
     const clickedImageSrc = imageElement.src;
     currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
 
-    if (currentLightboxImageIndex === -1) { // Should not happen if called correctly
+    if (currentLightboxImageIndex === -1) { 
         console.error("Clicked image not found in galleryApiImages");
         return;
     }
 
     lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
     lightboxModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent scrolling while lightbox is open
+    document.body.style.overflow = 'hidden'; 
     updateLightboxNav();
 }
 
-function closeLightbox() {
-    lightboxModal.classList.add('hidden');
-    document.body.style.overflow = ''; // Restore scrolling
-    galleryApiImages = [];
-    currentLightboxImageIndex = 0;
+function closeLightbox() { // This function needs to be accessible by modals.js for the Escape key fallback
+    if (lightboxModal) { // Ensure it exists
+        lightboxModal.classList.add('hidden');
+        document.body.style.overflow = ''; 
+        galleryApiImages = [];
+        currentLightboxImageIndex = 0;
+    }
 }
 
 function showNextImage() {
@@ -810,117 +840,64 @@ lightboxClose?.addEventListener('click', closeLightbox);
 lightboxPrev?.addEventListener('click', showPrevImage);
 lightboxNext?.addEventListener('click', showNextImage);
 
+// The global keydown listener that was here previously for lightbox and tokens modal
+// is now primarily handled in modals.js. We only need the lightbox-specific arrow key logic here.
+// The Escape part for lightbox is a fallback in modals.js if no generic modal was open.
 document.addEventListener('keydown', (e) => {
-    if (!lightboxModal.classList.contains('hidden')) { // If lightbox is open
-        if (e.key === 'Escape') {
-            closeLightbox();
-        } else if (e.key === 'ArrowRight') {
+    if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+        // Keep lightbox arrow navigation if lightbox is open
+        if (e.key === 'ArrowRight') {
             showNextImage();
         } else if (e.key === 'ArrowLeft') {
             showPrevImage();
         }
+        // Escape for lightbox is handled by the new global listener in modals.js as a fallback
     }
 });
 
-// Tokens Modal Functionality
-const tokensLink = document.querySelector('.tokens');
-const tokensModal = document.getElementById('tokens-modal');
-const tokensModalBackdrop = document.getElementById('tokens-modal-backdrop');
-const tokensModalPanel = document.getElementById('tokens-modal-panel');
-const tokensModalCancelButton = document.getElementById('tokens-modal-cancel-button');
+// Initialize the Tokens Modal using the new system
+if (typeof initializeModal === 'function') {
+    const tokensModalInstance = initializeModal('tokens-modal', '.tokens');
+    // The initializeModal function in modals.js now handles adding to a global list for Escape key handling.
+} else {
+    console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
+}
+
+
+// Specific logic for the "BUY TOKENS" button inside the tokens modal (if any beyond closing)
 const tokensModalBuyButton = document.getElementById('tokens-modal-buy-button');
-
-function openTokensModal() {
-    if (!tokensModal || !tokensModalBackdrop || !tokensModalPanel) return;
-
-    tokensModal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-
-    // Backdrop: Apply target state and transition classes
-    tokensModalBackdrop.classList.remove('opacity-0');
-    tokensModalBackdrop.classList.add('opacity-100', 'ease-out', 'duration-300');
-
-    // Panel: Reset to ensure "from" state is clean, then apply transition and "to" state
-    tokensModalPanel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100'); // remove any "to" classes
-    tokensModalPanel.classList.add('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95'); // ensure "from" classes
-    
-    tokensModalPanel.classList.add('ease-out', 'duration-300'); // Add transition behavior
-
-    requestAnimationFrame(() => {
-        // Apply "to" state, triggering transition
-        tokensModalPanel.classList.remove('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95');
-        tokensModalPanel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
-    });
-
-    // Clean up transition classes after animation
-    setTimeout(() => {
-        tokensModalBackdrop.classList.remove('ease-out', 'duration-300');
-        tokensModalPanel.classList.remove('ease-out', 'duration-300');
-    }, 300); 
-}
-
-function closeTokensModal() {
-    if (!tokensModal || !tokensModalBackdrop || !tokensModalPanel) return;
-
-    document.body.style.overflow = '';
-
-    // Add transition classes before changing to "from" state
-    tokensModalBackdrop.classList.add('ease-in', 'duration-200');
-    tokensModalPanel.classList.add('ease-in', 'duration-200');
-
-    // Trigger transition to "from" (hidden) state
-    tokensModalBackdrop.classList.remove('opacity-100');
-    tokensModalBackdrop.classList.add('opacity-0');
-
-    tokensModalPanel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
-    tokensModalPanel.classList.add('opacity-0', 'translate-y-12', 'sm:translate-y-12', 'sm:scale-95');
-
-    setTimeout(() => {
-        tokensModal.classList.add('hidden');
-        // Reset for next open: remove transition classes. "From" state is already set.
-        tokensModalBackdrop.classList.remove('ease-in', 'duration-200');
-        tokensModalPanel.classList.remove('ease-in', 'duration-200');
-    }, 200); 
-}
-
-if (tokensLink) {
-    tokensLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        openTokensModal();
-    });
-}
-
-if (tokensModalCancelButton) {
-    tokensModalCancelButton.addEventListener('click', closeTokensModal);
-}
-
 if (tokensModalBuyButton) {
     tokensModalBuyButton.addEventListener('click', (e) => {
         e.target.textContent = "Coming Soon";
-        // Optionally disable the button after click
         // e.target.disabled = true;
     });
 }
 
-if (tokensModalBackdrop) {
-    tokensModalBackdrop.addEventListener('click', closeTokensModal);
+
+// FAB Add Draw Group Functionality
+const fabAddDrawGroup = document.querySelector('.add-draw-group');
+const drawingsSelectForFab = document.getElementById('drawings'); // Already used elsewhere, ensure it's the same one
+
+if (fabAddDrawGroup && drawingsSelectForFab) {
+    fabAddDrawGroup.addEventListener('click', () => {
+        const currentNumDrawings = parseInt(drawingsSelectForFab.value);
+        const maxDrawings = drawingsSelectForFab.options.length; // Assuming options represent 1 to max
+        
+        if (currentNumDrawings < maxDrawings) {
+            drawingsSelectForFab.value = (currentNumDrawings + 1).toString();
+            // Dispatch a change event to trigger the existing logic for adding draw groups
+            drawingsSelectForFab.dispatchEvent(new Event('change'));
+        } else {
+            // Optionally, provide feedback if max is reached, or disable the FAB
+            console.log('Maximum number of draw groups reached.');
+            // fabAddDrawGroup.disabled = true; // Example: disable FAB
+        }
+    });
 }
 
-// Modify existing keydown listener to also handle tokens modal
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
-            closeLightbox();
-        } else if (tokensModal && !tokensModal.classList.contains('hidden')) {
-            closeTokensModal();
-        }
-    } 
-    // Keep lightbox arrow navigation if lightbox is open
-    if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
-      if (e.key === 'ArrowRight') {
-          showNextImage();
-      } else if (e.key === 'ArrowLeft') {
-          showPrevImage();
-      }
-    }
-}); 
+// Initialize the Projects Modal using the new system
+if (typeof initializeModal === 'function') {
+    const projectsModalInstance = initializeModal('projects-modal', '.projects-link');
+} else {
+    console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
+} 
