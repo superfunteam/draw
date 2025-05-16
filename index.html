@@ -320,18 +320,15 @@
             <div class="input-group">
               <div>
                 <div class="relative">
-                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
+                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white resize-none" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
                     
-                    <div class="actions absolute bottom-2 left-2 flex flex-row gap-2">
+                    <div class="actions w-full absolute bottom-2 left-0 right-0 px-2 flex flex-row gap-2">
                         <button class="ai improve bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1">
 
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
                                 <path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5ZM18 1.5a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5ZM16.5 15a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z" clip-rule="evenodd" />
                               </svg>
-                              
-
-                              <span class="text-xs font-semibold">Improve</span>
-                              
+                              <span class="text-xs font-semibold">Improve</span>  
                                                         
                         </button>
                         <button class="draw group bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1 relative">
@@ -342,6 +339,12 @@
                               <span class="label text-xs font-semibold">Draw</span>
                               <span class="draw-all text-xs text-indigo-600 absolute -right-2 group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600">Draw All</span>
                         </button>
+                        <div class="image-prompt hidden w-full flex items-center justify-end gap-1.5">
+                          <div class="prompt-image-preview image-1 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
+                          <div class="prompt-image-preview image-2 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
+                          <div class="prompt-image-preview image-3 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
+                          <div class="prompt-image-preview image-4 hidden image size-6 rounded-sm bg-indigo-100 bg-cover bg-center"></div>
+                        </div>
                     </div>
 
                 </div>

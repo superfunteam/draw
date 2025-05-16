@@ -100,6 +100,65 @@ function attachButtonListeners(drawGroup) {
     // Remove any existing listeners by cloning and replacing the buttons
     const drawButton = drawGroup.querySelector('.actions .draw');
     const aiButton = drawGroup.querySelector('.actions .ai');
+    const textarea = drawGroup.querySelector('textarea'); // Get the textarea for this group
+
+    // Initialize or reset the paste slot index for this draw group
+    drawGroup.dataset.nextPasteSlotIndex = '1';
+
+    // Paste image listener for the textarea
+    if (textarea) {
+        textarea.addEventListener('paste', (event) => {
+            const items = (event.clipboardData || event.originalEvent.clipboardData)?.items;
+            let imageFile = null;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        imageFile = items[i].getAsFile();
+                        break;
+                    }
+                }
+            }
+
+            if (imageFile) {
+                event.preventDefault();
+                
+                let currentPasteSlotIndex = parseInt(drawGroup.dataset.nextPasteSlotIndex || '1');
+                if (currentPasteSlotIndex > 4) {
+                    console.log('All 4 image paste slots are full for group:', drawGroup.id);
+                    return; // Stop if all 4 slots are conceptually filled
+                }
+
+                const targetPreviewDiv = drawGroup.querySelector(`.prompt-image-preview.image-${currentPasteSlotIndex}`);
+                const imagePromptContainer = drawGroup.querySelector('.image-prompt');
+
+                if (targetPreviewDiv && imagePromptContainer) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        // Make the .image-prompt container visible if it's the first paste for this group
+                        if (imagePromptContainer.classList.contains('hidden')) {
+                            imagePromptContainer.classList.remove('hidden');
+                        }
+                        
+                        // Make the specific slot visible
+                        targetPreviewDiv.classList.remove('hidden'); 
+
+                        targetPreviewDiv.dataset.pastedImageUrl = e.target.result;
+                        targetPreviewDiv.style.backgroundImage = `url(${e.target.result})`;
+                        targetPreviewDiv.classList.remove('bg-indigo-100'); 
+                        console.log(`Image pasted into slot ${currentPasteSlotIndex} for draw group: ${drawGroup.id}`);
+                        
+                        // Update next paste slot index only if current is <= 4
+                        if (currentPasteSlotIndex <= 4) {
+                            drawGroup.dataset.nextPasteSlotIndex = (currentPasteSlotIndex + 1).toString();
+                        }
+                    };
+                    reader.readAsDataURL(imageFile);
+                } else {
+                    console.error(`Could not find preview div .image-${currentPasteSlotIndex} in group ${drawGroup.id}`);
+                }
+            }
+        });
+    }
     
     if (drawButton) {
         const newDrawButton = drawButton.cloneNode(true);
@@ -184,7 +243,6 @@ function attachButtonListeners(drawGroup) {
                 delete newDrawButton.dataset.countdownIntervalId;
             }
 
-            const textarea = drawGroup.querySelector('textarea');
             const canvas = drawGroup.querySelector('.canvas');
             const emptyMessage = canvas.querySelector('.empty');
             const loader = canvas.querySelector('.loader');
