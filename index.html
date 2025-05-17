@@ -20,7 +20,9 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="/unfurl.png">
     <link rel="stylesheet" href="/build.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shepherd.js/7.1.2/css/shepherd.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shepherd.js/7.1.2/js/shepherd.min.js"></script>
     <script>
         // Fetch API key from serverless function
         fetch('/.netlify/functions/get-env')
@@ -220,7 +222,7 @@
       <div class="settings-panel py-6 flex flex-col px-4 sm:px-6 lg:px-8 bg-indigo-50 border-b border-indigo-200">
         <div class="relative">
           <div class="mt-2 grid grid-cols-1 relative">
-            <textarea id="prompt" name="prompt" rows="3" class="col-start-1 row-start-1 w-full appearance-none rounded-tl-lg rounded-tr-lg bg-white pb-7 sm:pb-1.5 p-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 outline-2 -outline-offset-2 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 resize-none" placeholder="Enter a coloring book prompt here (describe your story or idea, your kid or character, etc)..."></textarea>
+            <textarea id="prompt" name="prompt" rows="3" class="col-start-1 row-start-1 w-full appearance-none rounded-tl-lg rounded-tr-lg bg-white pb-7 md:pr-32 sm:pb-1.5 p-1.5 pt-4 pr-8 pl-3 text-base text-gray-900 outline-2 -outline-offset-2 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6 resize-none" placeholder="Enter a coloring book prompt here (describe your story or idea, your kid or character, etc), then use the 'Write Story' button to generate a full set of images/pages."></textarea>
             <div class="actions absolute bottom-3 md:bottom-auto md:top-3 right-3 flex flex-row gap-2">
                 <button class="write bg-indigo-600 rounded-md p-1 pr-1.5 text-white flex flex-row gap-1 items-center justify-center hover:!text-indigo-600 hover:!bg-indigo-200 ">
 
@@ -356,7 +358,7 @@
 
             <div class="input-group md:col-span-6 h-full">
                 <div class="relative h-full">
-                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full h-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white resize-none" placeholder="Prompt a single image or start up top with the storybook writer..."></textarea>
+                    <textarea rows="6" name="comment" id="story" style="outline-style: solid;" class="block w-full h-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-2 -outline-offset-2 outline-solid outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm leading-snug border-b-[40px] border-white resize-none" placeholder="Prompt a single image here, or start up top with the 'Write Story' prompt builder. &#13;&#10;&#13;&#10;Then use the 'Imagine' button to punch-up your ideas, and use 'Draw' when you are ready."></textarea>
                     
                     <div class="actions w-full absolute bottom-2 left-0 right-0 px-2 flex flex-row gap-2">
                         <button class="ai improve bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1">
@@ -367,12 +369,12 @@
                               <span class="text-xs font-semibold">Improve</span>  
                                                         
                         </button>
-                        <button class="draw group bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1 relative">
+                        <button class="draw group bg-indigo-100 rounded-sm p-1 pr-1.5 text-indigo-600 flex flex-row gap-1 relative hover:cursor-pointer">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
                               </svg>
                               <span class="label text-xs font-semibold">Draw</span>
-                              <span class="draw-all text-xs text-indigo-600 absolute -right-2 group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600 font-semibold">All</span>
+                              <span class="draw-all text-xs text-indigo-600 absolute -right-2 translate-x-full md:translate-x-0 md:group-hover:translate-x-full top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 transition-all duration-300 group-hover:opacity-100 delay-300 group-hover:delay-0 z-10 hover:text-red-600 font-semibold">All</span>
                         </button>
                         <div class="image-prompt w-full flex items-center justify-end gap-1.5">
                           <div class="prompt-image-preview image-1 image size-6 rounded-sm bg-cover bg-center transition-all duration-150 ease-in-out border-1 border-indigo-200 flex items-center justify-center cursor-pointer hover:scale-110 origin-center">

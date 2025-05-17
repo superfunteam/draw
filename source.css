@@ -8,8 +8,8 @@
     @apply relative overflow-hidden border-dashed;
 }
 
-.canvas > img:last-child{
-    
+.draw-group:only-child .draw-all{
+    @apply hidden;
 }
 
 .actions button{

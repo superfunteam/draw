@@ -95,6 +95,75 @@ document.addEventListener('keydown', (e) => {
 // Store the template draw group
 let drawGroupTemplate = null;
 
+document.addEventListener('DOMContentLoaded', () => {
+    const firstDrawGroup = document.querySelector('.draw-group');
+    if (firstDrawGroup) {
+        drawGroupTemplate = firstDrawGroup.cloneNode(true);
+
+        // Clean the template thoroughly
+        // Reset ID - new ones will be assigned by createDrawGroup
+        drawGroupTemplate.id = ''; 
+        const canvas = drawGroupTemplate.querySelector('.canvas');
+        if (canvas) {
+            canvas.id = ''; // Reset canvas ID
+            // Clear any existing image and show empty/loader state
+            const existingApiImg = canvas.querySelector('img.api-image');
+            if (existingApiImg) existingApiImg.remove();
+            const errorDiv = canvas.querySelector('.text-red-500'); // Remove potential error message
+            if (errorDiv) errorDiv.remove();
+            
+            const emptyMessage = canvas.querySelector('.empty');
+            const loader = canvas.querySelector('.loader');
+            if (emptyMessage) emptyMessage.classList.remove('hidden');
+            if (loader) loader.classList.add('hidden');
+        }
+
+        const textarea = drawGroupTemplate.querySelector('textarea');
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        const imageActions = drawGroupTemplate.querySelector('.image-actions');
+        if (imageActions) {
+            imageActions.classList.add('hidden');
+        }
+
+        // Reset image prompt previews in the template
+        const imagePromptContainer = drawGroupTemplate.querySelector('.image-prompt');
+        if (imagePromptContainer) {
+            drawGroupTemplate.dataset.nextPasteSlotIndex = '1';
+            const previews = imagePromptContainer.querySelectorAll('.prompt-image-preview');
+            previews.forEach((preview, index) => {
+                preview.style.backgroundImage = '';
+                delete preview.dataset.pastedImageUrl;
+                const plusIcon = preview.querySelector('.plus-icon');
+                if (index === 0) { // First slot
+                    preview.classList.remove('hidden');
+                    if (plusIcon) plusIcon.classList.remove('hidden');
+                } else { // Other slots
+                    preview.classList.add('hidden');
+                    if (plusIcon) plusIcon.classList.add('hidden');
+                }
+            });
+        }
+         // Remove event listeners from buttons in the template if any were captured during cloning
+        const templateButtons = drawGroupTemplate.querySelectorAll('button');
+        templateButtons.forEach(button => {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+        });
+
+        console.log('Draw group template captured and cleaned.');
+    } else {
+        console.error('Initial .draw-group not found to create a template.');
+    }
+
+    // Initial attachment of button listeners to existing groups on the page
+    document.querySelectorAll('.draw-group').forEach(group => {
+        attachButtonListeners(group);
+    });
+});
+
 // Function to attach button listeners to a draw group
 function attachButtonListeners(drawGroup) {
     const drawButton = drawGroup.querySelector('.actions .draw');
@@ -196,9 +265,24 @@ function attachButtonListeners(drawGroup) {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Get all draw buttons
-                const buttons = Array.from(document.querySelectorAll('.actions .draw:not(:disabled)')); // Only non-disabled
-                console.log('Total non-disabled buttons found for Draw All:', buttons.length);
+                // Get all draw groups and filter them to get buttons of groups with text in textarea
+                const allDrawGroups = Array.from(document.querySelectorAll('.draw-group'));
+                const buttons = allDrawGroups.reduce((acc, group) => {
+                    const textarea = group.querySelector('textarea');
+                    const drawButton = group.querySelector('.actions .draw:not(:disabled)');
+                    if (textarea && textarea.value.trim() !== '' && drawButton) {
+                        acc.push(drawButton);
+                    }
+                    return acc;
+                }, []);
+
+                if (buttons.length === 0) {
+                    console.log('Draw All: No draw groups with prompts found.');
+                    alert('Please add some prompts before using Draw All.');
+                    return;
+                }
+                
+                console.log('Total non-disabled buttons with prompts found for Draw All:', buttons.length);
                 
                 for (let i = 0; i < buttons.length; i += 5) {
                     const batch = buttons.slice(i, i + 5);
@@ -615,38 +699,65 @@ let response;
 
 // Function to create a draw group HTML
 function createDrawGroup(index) {
-    // If we don't have a template yet, create one from the existing HTML
     if (!drawGroupTemplate) {
-        const existingGroup = document.querySelector('.draw-group');
-        if (existingGroup) {
-            drawGroupTemplate = existingGroup.cloneNode(true);
-            // Remove any existing event listeners from the template
-            const buttons = drawGroupTemplate.querySelectorAll('button');
-            buttons.forEach(button => {
-                button.replaceWith(button.cloneNode(true));
-            });
-        } else {
-            console.error('No draw group template found in HTML');
-            return null;
-        }
+        console.error('Draw group template is not available. Cannot create new group.');
+        return null;
     }
     
     // Clone the template
-    const template = drawGroupTemplate.cloneNode(true);
+    const newGroup = drawGroupTemplate.cloneNode(true);
     
-    // Update IDs
-    template.id = `draw-group-${index}`;
-    const canvas = template.querySelector('.canvas');
-    canvas.id = `canvas-${index}`;
+    // Update IDs for the new clone
+    newGroup.id = `draw-group-${index}`;
+    const canvas = newGroup.querySelector('.canvas');
+    if (canvas) {
+        canvas.id = `canvas-${index}`;
+        // Ensure canvas is in default empty state for the clone
+        const existingApiImg = canvas.querySelector('img.api-image');
+        if (existingApiImg) existingApiImg.remove();
+        const errorDiv = canvas.querySelector('.text-red-500');
+        if (errorDiv) errorDiv.remove();
+        const emptyMessage = canvas.querySelector('.empty');
+        const loader = canvas.querySelector('.loader');
+        if (emptyMessage) emptyMessage.classList.remove('hidden');
+        if (loader) loader.classList.add('hidden');
+    }
     
-    // Reset textarea value
-    const textarea = template.querySelector('textarea');
-    textarea.value = '';
+    // Reset textarea value for the clone (double-check, template should be clean)
+    const textarea = newGroup.querySelector('textarea');
+    if (textarea) {
+        textarea.value = '';
+    }
+
+    // Ensure image-actions are hidden for the clone
+    const imageActions = newGroup.querySelector('.image-actions');
+    if (imageActions) {
+        imageActions.classList.add('hidden');
+    }
+
+    // Reset image prompt previews for the new clone
+    const imagePromptContainer = newGroup.querySelector('.image-prompt');
+    if (imagePromptContainer) {
+        newGroup.dataset.nextPasteSlotIndex = '1';
+        const previews = imagePromptContainer.querySelectorAll('.prompt-image-preview');
+        previews.forEach((preview, idx) => {
+            preview.style.backgroundImage = '';
+            delete preview.dataset.pastedImageUrl;
+            const plusIcon = preview.querySelector('.plus-icon');
+            if (idx === 0) { // First slot
+                preview.classList.remove('hidden');
+                if (plusIcon) plusIcon.classList.remove('hidden');
+            } else { // Other slots
+                preview.classList.add('hidden');
+                if (plusIcon) plusIcon.classList.add('hidden');
+            }
+        });
+    }
     
     // Attach button listeners to the new group
-    attachButtonListeners(template);
+    attachButtonListeners(newGroup);
     
-    return template;
+    return newGroup;
 }
 
 // Handle number of drawings change
@@ -680,11 +791,6 @@ drawingsSelect.addEventListener('change', () => {
             }
         }
     }
-});
-
-// Initial attachment of button listeners to existing groups
-document.querySelectorAll('.draw-group').forEach(group => {
-    attachButtonListeners(group);
 });
 
 // Create button functionality
