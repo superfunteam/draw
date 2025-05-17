@@ -97,15 +97,59 @@ let drawGroupTemplate = null;
 
 // Function to attach button listeners to a draw group
 function attachButtonListeners(drawGroup) {
-    // Remove any existing listeners by cloning and replacing the buttons
     const drawButton = drawGroup.querySelector('.actions .draw');
     const aiButton = drawGroup.querySelector('.actions .ai');
-    const textarea = drawGroup.querySelector('textarea'); // Get the textarea for this group
+    const textarea = drawGroup.querySelector('textarea');
+    const imagePromptContainer = drawGroup.querySelector('.image-prompt');
 
-    // Initialize or reset the paste slot index for this draw group
+    // Initialize image prompt previews for this group
     drawGroup.dataset.nextPasteSlotIndex = '1';
+    if (imagePromptContainer) {
+        // Ensure container is visible by default (it might be hidden if cloned from a hidden template initially)
+        // However, index.html now starts .image-prompt without 'hidden', so this might not be strictly necessary
+        // imagePromptContainer.classList.remove('hidden'); 
 
-    // Paste image listener for the textarea
+        const previews = imagePromptContainer.querySelectorAll('.prompt-image-preview');
+        previews.forEach((preview, index) => {
+            const plusIcon = preview.querySelector('.plus-icon');
+            if (index === 0) { // First slot
+                preview.classList.remove('hidden');
+                if (plusIcon) plusIcon.classList.remove('hidden');
+            } else { // Other slots
+                preview.classList.add('hidden');
+                if (plusIcon) plusIcon.classList.add('hidden');
+            }
+            // Clear any potential leftover background image from template cloning if needed
+            preview.style.backgroundImage = '';
+            
+            delete preview.dataset.pastedImageUrl;
+        });
+
+        // Add click listeners to image preview slots for file picking
+        previews.forEach((previewSlot, slotIndex) => {
+            previewSlot.addEventListener('click', () => {
+                // Only trigger file input if the slot doesn't already have a pasted/chosen image
+                // Or, if we want to allow changing it, remove this condition.
+                if (!previewSlot.dataset.pastedImageUrl) {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'image/*';
+                    fileInput.style.display = 'none';
+
+                    fileInput.addEventListener('change', (event) => {
+                        const file = event.target.files[0];
+                        if (file) {
+                            handleImageFile(file, previewSlot, drawGroup, slotIndex + 1);
+                        }
+                        fileInput.remove(); // Clean up the dynamically created input
+                    });
+                    document.body.appendChild(fileInput); // Required for some browsers for click to work
+                    fileInput.click();
+                }
+            });
+        });
+    }
+
     if (textarea) {
         textarea.addEventListener('paste', (event) => {
             const items = (event.clipboardData || event.originalEvent.clipboardData)?.items;
@@ -121,56 +165,19 @@ function attachButtonListeners(drawGroup) {
 
             if (imageFile) {
                 event.preventDefault();
-                
                 let currentPasteSlotIndex = parseInt(drawGroup.dataset.nextPasteSlotIndex || '1');
+
                 if (currentPasteSlotIndex > 4) {
-                    console.log('All 4 image paste slots are full for group:', drawGroup.id);
-                    return; // Stop if all 4 slots are conceptually filled
+                    console.log('All 4 image paste slots are full for group (via paste):', drawGroup.id);
+                    return;
                 }
 
                 const targetPreviewDiv = drawGroup.querySelector(`.prompt-image-preview.image-${currentPasteSlotIndex}`);
-                const imagePromptContainer = drawGroup.querySelector('.image-prompt');
-
-                if (targetPreviewDiv && imagePromptContainer) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        // Make the .image-prompt container visible if it's the first paste for this group
-                        if (imagePromptContainer.classList.contains('hidden')) {
-                            imagePromptContainer.classList.remove('hidden');
-                        }
-                        
-                        // Make the specific slot visible
-                        targetPreviewDiv.classList.remove('hidden'); 
-
-                        targetPreviewDiv.dataset.pastedImageUrl = e.target.result;
-                        targetPreviewDiv.style.backgroundImage = `url(${e.target.result})`;
-                        targetPreviewDiv.classList.remove('bg-indigo-100');
-                        
-                        // Animation: Start small and transparent
-                        targetPreviewDiv.classList.add('opacity-0', 'scale-[.75]');
-
-                        requestAnimationFrame(() => {
-                            // Animate to pop-out (larger and opaque)
-                            targetPreviewDiv.classList.remove('opacity-0', 'scale-[.75]');
-                            targetPreviewDiv.classList.add('opacity-100', 'scale-[1.25]');
-
-                            // After pop-out animation, settle to normal size
-                            setTimeout(() => {
-                                targetPreviewDiv.classList.remove('scale-[1.25]');
-                                targetPreviewDiv.classList.add('scale-100');
-                            }, 150); // Matches the transition duration
-                        });
-                        
-                        console.log(`Image pasted into slot ${currentPasteSlotIndex} for draw group: ${drawGroup.id}`);
-                        
-                        // Update next paste slot index only if current is <= 4
-                        if (currentPasteSlotIndex <= 4) {
-                            drawGroup.dataset.nextPasteSlotIndex = (currentPasteSlotIndex + 1).toString();
-                        }
-                    };
-                    reader.readAsDataURL(imageFile);
+                
+                if (targetPreviewDiv) {
+                    handleImageFile(imageFile, targetPreviewDiv, drawGroup, currentPasteSlotIndex);
                 } else {
-                    console.error(`Could not find preview div .image-${currentPasteSlotIndex} in group ${drawGroup.id}`);
+                    console.error(`Could not find preview div .image-${currentPasteSlotIndex} for paste in group ${drawGroup.id}`);
                 }
             }
         });
@@ -301,15 +308,18 @@ function attachButtonListeners(drawGroup) {
             
             // Get preset and define prompt rules
             const presetSelect = document.getElementById('preset');
-            let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color."; // Default
+            let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color. Here is the prompt:"; // Default
             if (presetSelect) {
                 switch (presetSelect.value) {
                     case "Photo":
-                        promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors";
+                        promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors for this prompt:";
                         break;
+                    case "None":
+                            promptPrefix = "Create an image exactly in the style as prompted:";
+                            break;
                     case "Coloring Book":
                     default:
-                        promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color.";
+                        promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color. Here is the prompt:";
                         break;
                 }
             }
@@ -335,22 +345,51 @@ function attachButtonListeners(drawGroup) {
             svgIcon.classList.add('animate-pulse');
             
             try {
-                // Call ChatGPT API for image generation
-                console.log('Making image generation API call...');
-                const response = await fetch('https://api.openai.com/v1/images/generations', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-image-1",
-                        size: imageSize,
-                        quality: qualityValue,
-                        output_format: "png",
-                        prompt: `${promptPrefix} that shows: ${prompt}.`
-                    })
-                });
+                
+                const imageEl = document.querySelector('.prompt-image-preview.image-1');
+const pastedImageURL = imageEl?.dataset?.pastedImageUrl;
+
+let response;
+
+    if (pastedImageURL && pastedImageURL.startsWith("data:image/")) {
+        console.log('Detected pasted image. Using image edit API...');
+
+        const blob = await (await fetch(pastedImageURL)).blob();
+        const file = new File([blob], "image.png", { type: blob.type || "image/png" });
+
+        const formData = new FormData();
+        formData.append("model", "gpt-image-1");
+        formData.append("prompt", `${promptPrefix} ${prompt}.`);
+        formData.append("image", file);
+        formData.append("size", imageSize);
+        formData.append("quality", qualityValue);
+        formData.append("response_format", "b64_json");
+
+        response = await fetch("https://api.openai.com/v1/images/edit", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${window.OPENAI_API_KEY}`
+            },
+            body: formData
+        });
+    } else {
+        console.log('No pasted image. Using standard image generation API...');
+
+        response = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-image-1",
+                size: imageSize,
+                quality: qualityValue,
+                output_format: "png",
+                prompt: `${promptPrefix} ${prompt}.`
+            })
+        });
+    }
 
                 console.log('Response status:', response.status);
                 const responseText = await response.text();
@@ -900,4 +939,48 @@ if (typeof initializeModal === 'function') {
     const projectsModalInstance = initializeModal('projects-modal', '.projects-link');
 } else {
     console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
+}
+
+// Helper function to process an image file (from paste or click)
+function handleImageFile(imageFile, targetPreviewDiv, drawGroup, slotNumber) {
+    const plusIcon = targetPreviewDiv.querySelector('.plus-icon');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (plusIcon) plusIcon.classList.add('hidden');
+        targetPreviewDiv.style.backgroundImage = `url(${e.target.result})`;
+        // targetPreviewDiv.classList.remove('bg-indigo-100'); // Removed from HTML, so not needed here
+        targetPreviewDiv.dataset.pastedImageUrl = e.target.result;
+
+        // Pop animation
+        targetPreviewDiv.classList.remove('hidden'); 
+        targetPreviewDiv.classList.add('opacity-0', 'scale-[.75]');
+        requestAnimationFrame(() => {
+            targetPreviewDiv.classList.remove('opacity-0', 'scale-[.75]');
+            targetPreviewDiv.classList.add('opacity-100', 'scale-[1.25]');
+            setTimeout(() => {
+                targetPreviewDiv.classList.remove('scale-[1.25]');
+                targetPreviewDiv.classList.add('scale-100');
+            }, 150);
+        });
+
+        console.log(`Image set for slot ${slotNumber} in draw group: ${drawGroup.id}`);
+        
+        // Update next paste slot index *if* this was the slot it was expecting
+        let currentNextPasteSlot = parseInt(drawGroup.dataset.nextPasteSlotIndex || '1');
+        if (slotNumber === currentNextPasteSlot && currentNextPasteSlot <= 4) {
+             drawGroup.dataset.nextPasteSlotIndex = (currentNextPasteSlot + 1).toString();
+        }
+
+        // Reveal the *actual* next empty slot's plus icon, if it exists and isn't already visible
+        const nextSlotToShowIndex = slotNumber + 1;
+        if (nextSlotToShowIndex <= 4) {
+            const nextPreviewDiv = drawGroup.querySelector(`.prompt-image-preview.image-${nextSlotToShowIndex}`);
+            if (nextPreviewDiv && nextPreviewDiv.classList.contains('hidden')) { // Only if it's currently hidden
+                nextPreviewDiv.classList.remove('hidden');
+                const nextPlusIcon = nextPreviewDiv.querySelector('.plus-icon');
+                if (nextPlusIcon) nextPlusIcon.classList.remove('hidden');
+            }
+        }
+    };
+    reader.readAsDataURL(imageFile);
 } 
