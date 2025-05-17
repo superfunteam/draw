@@ -9,7 +9,7 @@
 }
 
 .canvas > img:last-child{
-    @apply border-2 border-indigo-50;
+    
 }
 
 .actions button{

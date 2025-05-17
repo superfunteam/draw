@@ -101,6 +101,7 @@ function attachButtonListeners(drawGroup) {
     const aiButton = drawGroup.querySelector('.actions .ai');
     const textarea = drawGroup.querySelector('textarea');
     const imagePromptContainer = drawGroup.querySelector('.image-prompt');
+    const imageActionsContainer = drawGroup.querySelector('.image-actions');
 
     // Initialize image prompt previews for this group
     drawGroup.dataset.nextPasteSlotIndex = '1';
@@ -425,6 +426,12 @@ let response;
                     img.alt = prompt;
                     canvas.appendChild(img);
 
+                    // Make image-actions visible
+                    const imageActions = drawGroup.querySelector('.image-actions');
+                    if (imageActions) {
+                        imageActions.classList.remove('hidden');
+                    }
+
                     // Log the revised prompt for reference
                     console.log('Revised prompt:', data.data[0].revised_prompt);
                     
@@ -534,6 +541,75 @@ let response;
                 svgIcon.classList.remove('animate-pulse');
             }
         });
+    }
+
+    if (imageActionsContainer) {
+        const copyButton = imageActionsContainer.querySelector('.image-action-button.copy');
+        const downloadButton = imageActionsContainer.querySelector('.image-action-button.download');
+
+        if (copyButton) {
+            copyButton.addEventListener('click', async () => {
+                // Pop effect
+                copyButton.classList.add('scale-110');
+                setTimeout(() => {
+                    copyButton.classList.remove('scale-110');
+                }, 150);
+
+                const apiImage = drawGroup.querySelector('img.api-image');
+                if (apiImage && apiImage.src) {
+                    try {
+                        const response = await fetch(apiImage.src);
+                        const blob = await response.blob();
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                [blob.type]: blob
+                            })
+                        ]);
+                        console.log('Image copied to clipboard!');
+                    } catch (err) {
+                        console.error('Failed to copy image: ', err);
+                        alert('Failed to copy image. See console for details.');
+                    }
+                } else {
+                    console.warn('No API image found to copy in this draw group.');
+                    alert('No image to copy.');
+                }
+            });
+        }
+
+        if (downloadButton) {
+            downloadButton.addEventListener('click', () => {
+                // Pop effect
+                downloadButton.classList.add('scale-110');
+                setTimeout(() => {
+                    downloadButton.classList.remove('scale-110');
+                }, 150);
+
+                const apiImage = drawGroup.querySelector('img.api-image');
+                const promptTextarea = drawGroup.querySelector('textarea');
+                let filename = 'superfun-image.png';
+                if (promptTextarea && promptTextarea.value.trim()) {
+                    // Create a slug from the first few words of the prompt
+                    const slug = promptTextarea.value.trim().toLowerCase().split(/\\s+/).slice(0, 5).join('-').replace(/[^a-z0-9-]/g, '');
+                    if (slug) {
+                        filename = `${slug}.png`;
+                    }
+                }
+
+                if (apiImage && apiImage.src) {
+                    const link = document.createElement('a');
+                    link.href = apiImage.src;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log('Image download initiated.');
+                } else {
+                    console.warn('No API image found to download in this draw group.');
+                    alert('No image to download.');
+                }
+            });
+        }
     }
 }
 
