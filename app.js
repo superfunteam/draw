@@ -1010,12 +1010,47 @@ if (fabAddDrawGroup && drawingsSelectForFab) {
     });
 }
 
+let projectsModalInstance = null; // Declare in a scope accessible to both
 // Initialize the Projects Modal using the new system
 if (typeof initializeModal === 'function') {
-    const projectsModalInstance = initializeModal('projects-modal', '.projects-link');
+    projectsModalInstance = initializeModal('projects-modal', '.projects-link');
 } else {
     console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
 }
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ctrl + N to add a new draw group
+    if (e.ctrlKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault(); // Prevent default browser action
+
+        const drawingsSelectForShortcut = document.getElementById('drawings');
+        if (drawingsSelectForShortcut) {
+            const currentNumDrawings = parseInt(drawingsSelectForShortcut.value);
+            const maxDrawings = drawingsSelectForShortcut.options.length;
+
+            if (currentNumDrawings < maxDrawings) {
+                drawingsSelectForShortcut.value = (currentNumDrawings + 1).toString();
+                drawingsSelectForShortcut.dispatchEvent(new Event('change'));
+                console.log('Added new draw group via Ctrl+N shortcut.');
+            } else {
+                console.log('Maximum number of draw groups reached (Ctrl+N shortcut attempt).');
+            }
+        }
+    }
+
+    // Ctrl + P to open Projects modal
+    if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault(); // Prevent default browser print action
+        const projectsLink = document.querySelector('.projects-link');
+        if (projectsLink) {
+            projectsLink.click();
+            console.log('Triggered click on .projects-link via Ctrl+P shortcut.');
+        } else {
+            console.error('.projects-link element not found for Ctrl+P shortcut.');
+        }
+    }
+});
 
 // Helper function to process an image file (from paste or click)
 function handleImageFile(imageFile, targetPreviewDiv, drawGroup, slotNumber) {

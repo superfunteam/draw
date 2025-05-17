@@ -73,6 +73,43 @@ function initializeModal(modalId, openTriggerSelector, options = {}) {
         setTimeout(() => {
             backdropElement.classList.remove(easeOut, enterDuration);
             panelElement.classList.remove(easeOut, enterDuration);
+
+            // Attempt to focus the first visible input or textarea in this specific modal
+            if (modalElement.id === 'projects-modal') {
+                const inputToFocus = modalElement.querySelector('input[type="text"], textarea');
+                if (inputToFocus) {
+                    inputToFocus.focus();
+
+                    // Add input event listener for project search functionality
+                    inputToFocus.addEventListener('input', () => {
+                        const projectsQuick = modalElement.querySelector('.projects-quick');
+                        const projectsSearchResults = modalElement.querySelector('.projects-search-results');
+
+                        if (projectsQuick && projectsSearchResults) {
+                            if (inputToFocus.value.trim() !== '') {
+                                projectsQuick.classList.add('hidden');
+                                projectsSearchResults.classList.remove('hidden');
+                            } else {
+                                projectsQuick.classList.remove('hidden');
+                                projectsSearchResults.classList.add('hidden');
+                            }
+                        }
+                    });
+
+                    // Initial check in case the input is pre-filled or for consistent state
+                    const projectsQuick = modalElement.querySelector('.projects-quick');
+                    const projectsSearchResults = modalElement.querySelector('.projects-search-results');
+                    if (projectsQuick && projectsSearchResults) {
+                        if (inputToFocus.value.trim() !== '') {
+                            projectsQuick.classList.add('hidden');
+                            projectsSearchResults.classList.remove('hidden');
+                        } else {
+                            projectsQuick.classList.remove('hidden');
+                            projectsSearchResults.classList.add('hidden');
+                        }
+                    }
+                }
+            }
         }, parseInt(enterDuration.replace('duration-', '')));
     }
 
@@ -99,6 +136,21 @@ function initializeModal(modalId, openTriggerSelector, options = {}) {
             panelElement.classList.add(...panelInitialClasses);
             panelElement.classList.remove(...panelOpenTargetClasses);
 
+            // Reset projects modal specific elements if this is the projects modal
+            if (modalElement.id === 'projects-modal') {
+                const inputToClear = modalElement.querySelector('input[type="text"], textarea');
+                if (inputToClear) {
+                    inputToClear.value = ''; // Clear the input
+                }
+                const projectsQuick = modalElement.querySelector('.projects-quick');
+                const projectsSearchResults = modalElement.querySelector('.projects-search-results');
+                if (projectsQuick) {
+                    projectsQuick.classList.remove('hidden'); // Show quick actions
+                }
+                if (projectsSearchResults) {
+                    projectsSearchResults.classList.add('hidden'); // Hide search results
+                }
+            }
 
         }, parseInt(leaveDuration.replace('duration-', '')));
     }
