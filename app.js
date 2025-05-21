@@ -430,51 +430,58 @@ function attachButtonListeners(drawGroup) {
             svgIcon.classList.add('animate-pulse');
             
             try {
-                
-                const imageEl = document.querySelector('.prompt-image-preview.image-1');
-const pastedImageURL = imageEl?.dataset?.pastedImageUrl;
+                // imageFiles array is populated by the logic added in the previous step,
+                // which includes the loop for slots 1-4 and dataURLtoFile conversion.
+                // That previous step's console.log('All collected image files for this draw group:', imageFiles);
+                // will show what's in imageFiles.
 
-let response;
+                let response;
 
-    if (pastedImageURL && pastedImageURL.startsWith("data:image/")) {
-        console.log('Detected pasted image. Using image edit API...');
+                if (imageFiles.length > 0) {
+                    console.log('Detected images. Using image edit API...', imageFiles);
 
-        const blob = await (await fetch(pastedImageURL)).blob();
-        const file = new File([blob], "image.png", { type: blob.type || "image/png" });
+                    const formData = new FormData();
+                    formData.append("model", "gpt-image-1"); // As per original, DALL-E 2 for edits
+                    formData.append("prompt", `${promptPrefix} ${prompt}.`);
+                    
+                    // Iterate over the imageFiles array and append each file
+                    for (const imageFile of imageFiles) {
+                        formData.append("image", imageFile);
+                    }
+                    
+                    formData.append("size", imageSize);
+                    formData.append("quality", qualityValue);
+                    formData.append("response_format", "b64_json");
 
-        const formData = new FormData();
-        formData.append("model", "gpt-image-1");
-        formData.append("prompt", `${promptPrefix} ${prompt}.`);
-        formData.append("image", file);
-        formData.append("size", imageSize);
-        formData.append("quality", qualityValue);
-        formData.append("response_format", "b64_json");
+                    response = await fetch("https://api.openai.com/v1/images/edit", {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${window.OPENAI_API_KEY}`
+                        },
+                        body: formData
+                    });
+                } else {
+                    console.log('No images detected. Using standard image generation API...');
 
-        response = await fetch("https://api.openai.com/v1/images/edit", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${window.OPENAI_API_KEY}`
-            },
-            body: formData
-        });
-    } else {
-        console.log('No pasted image. Using standard image generation API...');
-
-        response = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-image-1",
-                size: imageSize,
-                quality: qualityValue,
-                output_format: "png",
-                prompt: `${promptPrefix} ${prompt}.`
-            })
-        });
-    }
+                    response = await fetch('https://api.openai.com/v1/images/generations', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-image-1", // DALL-E 3 for generations if no image provided
+                            size: imageSize,
+                            quality: qualityValue,
+                            output_format: "png", // API expects "url" or "b64_json", but "png" might be an internal mapping or mistake in original.
+                                                 // OpenAI API for generations usually expects "b64_json" for base64 or "url".
+                                                 // For consistency with edit, let's assume b64_json was intended if a direct image data is expected by rest of app.
+                                                 // However, the original code had "png" for generations and "b64_json" for edits.
+                                                 // Sticking to "png" as per original 'else' block for now.
+                            prompt: `${promptPrefix} ${prompt}.`
+                        })
+                    });
+                }
 
                 console.log('Response status:', response.status);
                 const responseText = await response.text();
@@ -1157,6 +1164,19 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+async function dataURLtoFile(dataurl, filename) {
+    const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+    // Corrected: use arr[arr.length - 1] for the actual base64 data part if there are multiple commas.
+    // However, typical image data URLs have only one comma. arr[1] is generally fine.
+    const bstr = atob(arr[1]); 
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+}
 
 // Helper function to process an image file (from paste or click)
 function handleImageFile(imageFile, targetPreviewDiv, drawGroup, slotNumber) {
