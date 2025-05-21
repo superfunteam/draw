@@ -259,6 +259,8 @@ function attachButtonListeners(drawGroup) {
         
         // Add click handler for the draw button that checks if draw-all was clicked
         newDrawButton.addEventListener('click', async (e) => {
+            let imageFiles = []; // Initialize imageFiles here
+
             // Check if the click was on the draw-all span
             const drawAllSpan = e.target.closest('.draw-all');
             if (drawAllSpan) {
@@ -428,13 +430,25 @@ function attachButtonListeners(drawGroup) {
             const originalText = newDrawButton.querySelector('span').textContent;
             newDrawButton.querySelector('span').textContent = 'Drawing...';
             svgIcon.classList.add('animate-pulse');
+
+            // Collect images BEFORE the try-catch block
+            // imageFiles is already declared at the top of this event listener
+            for (let i = 1; i <= 4; i++) {
+                const slot = drawGroup.querySelector(`.prompt-image-preview.image-${i}`);
+                if (slot && slot.dataset.pastedImageUrl && slot.dataset.pastedImageUrl.startsWith('data:image/')) {
+                    try {
+                        const filename = `image_${i}.png`;
+                        const file = await dataURLtoFile(slot.dataset.pastedImageUrl, filename);
+                        imageFiles.push(file);
+                        console.log(`Collected image from slot ${i}: ${filename}`, file);
+                    } catch (error) {
+                        console.error(`Error converting data URL to file for slot ${i}:`, error);
+                    }
+                }
+            }
+            console.log('All collected image files for this draw group:', imageFiles);
             
             try {
-                // imageFiles array is populated by the logic added in the previous step,
-                // which includes the loop for slots 1-4 and dataURLtoFile conversion.
-                // That previous step's console.log('All collected image files for this draw group:', imageFiles);
-                // will show what's in imageFiles.
-
                 let response;
 
                 if (imageFiles.length > 0) {
