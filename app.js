@@ -1,3 +1,154 @@
+// Auth state management
+let currentUser = null;
+
+// Load auth state from localStorage
+function loadAuthState() {
+    const stored = localStorage.getItem('superfun_auth');
+    if (stored) {
+        try {
+            currentUser = JSON.parse(stored);
+            updateAuthUI();
+        } catch (e) {
+            localStorage.removeItem('superfun_auth');
+        }
+    }
+}
+
+// Save auth state to localStorage
+function saveAuthState(user) {
+    currentUser = user;
+    localStorage.setItem('superfun_auth', JSON.stringify(user));
+    updateAuthUI();
+}
+
+// Clear auth state
+function clearAuthState() {
+    currentUser = null;
+    localStorage.removeItem('superfun_auth');
+    updateAuthUI();
+}
+
+// Update UI based on auth state
+function updateAuthUI() {
+    const tokenButtons = document.querySelectorAll('.tokens');
+    
+    tokenButtons.forEach(button => {
+        if (currentUser && currentUser.tokens !== undefined) {
+            // Show token count and update text
+            const tokenCount = currentUser.tokens;
+            button.innerHTML = button.innerHTML.replace(/Buy Tokens|Tokens/g, `Buy (${tokenCount})`);
+        } else {
+            // Reset to original text
+            button.innerHTML = button.innerHTML.replace(/Buy \(\d+\)/g, 'Buy Tokens');
+        }
+    });
+}
+
+// Check for auth code in URL on page load
+function checkUrlAuth() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('auth');
+    
+    if (authCode) {
+        // Remove auth code from URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Attempt login
+        loginWithAuthCode(authCode);
+    }
+}
+
+// Login with auth code
+async function loginWithAuthCode(authCode) {
+    try {
+        const response = await fetch('/.netlify/functions/auth-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authCode })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            saveAuthState(data.user);
+            
+            // Show success message
+            alert(`Welcome back! You have ${data.user.tokens} tokens available.`);
+        } else {
+            alert(data.error || 'Invalid or expired login code');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Failed to log in. Please try again.');
+    }
+}
+
+// Check if user has sufficient tokens, show modal if not
+function checkTokensBeforeDraw() {
+    if (!currentUser) {
+        // Not logged in, show tokens modal
+        const modal = document.getElementById('tokens-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+        return false;
+    }
+    
+    if (currentUser.tokens <= 0) {
+        // No tokens left, show modal
+        alert('You have no tokens remaining. Please purchase more tokens to continue.');
+        const modal = document.getElementById('tokens-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+        return false;
+    }
+    
+    return true;
+}
+
+// Deduct tokens after successful API call
+async function deductTokens(tokensUsed) {
+    if (!currentUser || !currentUser.email) {
+        return false;
+    }
+    
+    try {
+        const response = await fetch('/.netlify/functions/deduct-tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: currentUser.email,
+                tokensUsed
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            // Update local state
+            currentUser.tokens = data.newBalance;
+            saveAuthState(currentUser);
+            
+            console.log(`Deducted ${tokensUsed} tokens. New balance: ${data.newBalance}`);
+            return true;
+        } else {
+            console.error('Failed to deduct tokens:', data.error);
+            return false;
+        }
+    } catch (error) {
+        console.error('Token deduction error:', error);
+        return false;
+    }
+}
+
+// Initialize auth on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadAuthState();
+    checkUrlAuth();
+});
+
 // Mobile menu functionality
 const mobileMenuButton = document.querySelector('button.menu');
 const mobileMenu = document.querySelector('.relative.z-50.lg\\:hidden');
@@ -351,6 +502,11 @@ function attachButtonListeners(drawGroup) {
             }
             
             // Regular draw button click handling (individual button)
+            // Check tokens before proceeding
+            if (!checkTokensBeforeDraw()) {
+                return;
+            }
+            
             // Clear countdown if one was running on this button
             if (newDrawButton.dataset.countdownIntervalId) {
                 clearInterval(parseInt(newDrawButton.dataset.countdownIntervalId));
@@ -561,6 +717,10 @@ function attachButtonListeners(drawGroup) {
                 }
                 
                 if (imageData) {
+                    // Deduct tokens based on API usage
+                    const tokensUsed = data.usage?.total_tokens || 100; // fallback if usage not provided
+                    await deductTokens(tokensUsed);
+                    
                     // Hide both empty message and loader
                     emptyMessage.classList.add('hidden');
                     loader.classList.add('hidden');
@@ -1161,12 +1321,65 @@ if (typeof initializeModal === 'function') {
 }
 
 
-// Specific logic for the "BUY TOKENS" button inside the tokens modal (if any beyond closing)
+// Token purchase logic
 const tokensModalBuyButton = document.getElementById('tokens-modal-buy-button');
 if (tokensModalBuyButton) {
-    tokensModalBuyButton.addEventListener('click', (e) => {
-        e.target.textContent = "Coming Soon";
-        // e.target.disabled = true;
+    tokensModalBuyButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('user-email').value.trim();
+        const selectedPlan = document.querySelector('input[name="pricing-plan"]:checked')?.value;
+        
+        if (!email) {
+            alert('Please enter your email address');
+            return;
+        }
+        
+        if (!selectedPlan) {
+            alert('Please select a token plan');
+            return;
+        }
+        
+        // Show loading state
+        const originalText = e.target.textContent;
+        e.target.textContent = "Processing...";
+        e.target.disabled = true;
+        
+        try {
+            const response = await fetch('/.netlify/functions/purchase-tokens', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    plan: selectedPlan
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Show success message
+                alert(data.message);
+                
+                // Close modal
+                const modal = document.getElementById('tokens-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+                
+                // Clear form
+                document.getElementById('user-email').value = '';
+            } else {
+                alert(data.error || 'Failed to process purchase');
+            }
+        } catch (error) {
+            console.error('Purchase error:', error);
+            alert('Failed to process purchase. Please try again.');
+        } finally {
+            // Reset button
+            e.target.textContent = originalText;
+            e.target.disabled = false;
+        }
     });
 }
 

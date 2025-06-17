@@ -142,3 +142,83 @@ Added support for sending multiple reference images (up to 4) to OpenAI's image 
 - Implement error handling for oversized images
 - Add visual feedback for image processing status
 - Consider adding image editing features before generation
+
+## User Authentication & Token System (Jan 2025)
+
+### What Was Implemented
+Added passwordless authentication system with token-based usage tracking. Users can purchase tokens via email verification and track their usage automatically.
+
+### System Architecture
+
+#### Database Schema (`netlify/schema.sql`)
+```sql
+CREATE TABLE users (
+  email TEXT PRIMARY KEY,
+  tokens INTEGER NOT NULL DEFAULT 0,
+  auth_code TEXT UNIQUE,
+  auth_code_used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Serverless Functions
+- **`purchase-tokens.js`**: Handles token "purchases" (mocked payment flow)
+- **`send-auth-email.js`**: Sends login codes via Mailjet
+- **`auth-login.js`**: Validates auth codes and returns user data
+- **`deduct-tokens.js`**: Deducts tokens after successful API calls
+
+#### Authentication Flow
+1. **Purchase Flow**: User enters email + selects token plan → generates 8-digit code → sends email
+2. **Email Login**: User clicks link with `?auth=12345678` → validates code → logs in
+3. **Token Deduction**: After successful image generation → deducts `usage.total_tokens` from balance
+4. **Insufficient Tokens**: Shows modal to purchase more tokens
+
+### Key Implementation Details
+
+#### Client-Side Auth State
+- **Storage**: `localStorage` with key `superfun_auth`
+- **State Object**: `{ email: string, tokens: number }`
+- **UI Updates**: Token count displays as "Buy (123)" when logged in
+
+#### Token Usage Tracking
+- **Deduction Trigger**: After successful API response with image data
+- **Amount**: Uses `data.usage.total_tokens` from OpenAI response (example: 6278 tokens)
+- **Zero Protection**: Never goes negative, zeros out balance instead
+- **Error Handling**: Shows purchase modal when insufficient tokens
+
+#### Email Integration (Mailjet)
+- **Service**: Mailjet API for transactional emails
+- **Template**: Plain text with login link and 8-digit code
+- **Environment**: `MAILJET_API_KEY` and `MAILJET_SECRET_KEY` required
+
+### Configuration Requirements
+
+#### Environment Variables (Netlify)
+```
+OPENAI_API=""
+MAILJET_API_KEY=""
+MAILJET_SECRET_KEY=""
+```
+
+#### Dependencies Added
+```json
+{
+  "@netlify/database": "^1.0.0",
+  "node-mailjet": "^6.0.5"
+}
+```
+
+### User Experience Flow
+1. User tries to generate image without login → token modal appears
+2. User enters email, selects plan → "Check your email" message
+3. User clicks email link → automatically logged in
+4. Token count shows in UI, deducts after each generation
+5. When tokens run out → modal appears to purchase more
+
+### Testing Notes
+- Test email delivery with real Mailjet credentials
+- Verify token deduction matches API `usage.total_tokens`
+- Test insufficient token handling
+- Verify auth state persists across browser sessions
+- Test auth code expiration (one-time use)

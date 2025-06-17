@@ -1,11 +1,14 @@
 [build]
   publish = "."
 
+[[plugins]]
+  package = "@netlify/plugin-database"
+
 [context.production]
-  environment = { OPENAI_API = "" }
+  environment = { OPENAI_API = "", MAILJET_API_KEY = "", MAILJET_SECRET_KEY = "" }
 
 [context.development]
-  environment = { OPENAI_API = "" }
+  environment = { OPENAI_API = "", MAILJET_API_KEY = "", MAILJET_SECRET_KEY = "" }
 
 [[redirects]]
   from = "/*"
