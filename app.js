@@ -372,6 +372,7 @@ function attachButtonListeners(drawGroup) {
                     qualityValue = selectedQuality;
                 }
             }
+            console.log('Using quality setting:', qualityValue);
 
             // Get aspect ratio
             const ratioSelect = document.getElementById('ratio');
@@ -390,6 +391,7 @@ function attachButtonListeners(drawGroup) {
                         break;
                 }
             }
+            console.log('Using image size:', imageSize);
             
             // Get preset and define prompt rules
             const presetSelect = document.getElementById('preset');
@@ -431,50 +433,92 @@ function attachButtonListeners(drawGroup) {
             
             try {
                 
-                const imageEl = document.querySelector('.prompt-image-preview.image-1');
-const pastedImageURL = imageEl?.dataset?.pastedImageUrl;
+                // Collect all reference images from the current draw group
+                const imageElements = drawGroup.querySelectorAll('.prompt-image-preview');
+                const imageReferences = [];
 
-let response;
+                // Process each image slot (1-4)
+                for (let i = 0; i < imageElements.length; i++) {
+                    const imageEl = imageElements[i];
+                    const pastedImageURL = imageEl?.dataset?.pastedImageUrl;
+                    
+                    if (pastedImageURL && pastedImageURL.startsWith("data:image/")) {
+                        console.log(`Processing reference image ${i + 1}...`);
+                        
+                        // Convert data URL to base64 string (remove data:image/type;base64, prefix)
+                        const base64Data = pastedImageURL.split(',')[1];
+                        
+                        imageReferences.push({
+                            type: "image_url",
+                            image_url: {
+                                url: pastedImageURL
+                            }
+                        });
+                    }
+                }
 
-    if (pastedImageURL && pastedImageURL.startsWith("data:image/")) {
-        console.log('Detected pasted image. Using image edit API...');
+                let response;
+                let requestBody;
+                let apiEndpoint;
 
-        const blob = await (await fetch(pastedImageURL)).blob();
-        const file = new File([blob], "image.png", { type: blob.type || "image/png" });
+                if (imageReferences.length > 0) {
+                    console.log(`Using ${imageReferences.length} reference image(s) with /responses API...`);
+                    
+                    // Build content array starting with the text prompt
+                    const contentArray = [
+                        { type: "input_text", text: `Please generate an image: ${promptPrefix} ${prompt}. Use the reference images provided to guide the style and content.` }
+                    ];
+                    
+                    // Add all reference images
+                    imageReferences.forEach((imageRef, index) => {
+                        contentArray.push({
+                            type: "input_image",
+                            image_url: imageRef.image_url.url
+                        });
+                    });
 
-        const formData = new FormData();
-        formData.append("model", "gpt-image-1");
-        formData.append("prompt", `${promptPrefix} ${prompt}.`);
-        formData.append("image", file);
-        formData.append("size", imageSize);
-        formData.append("quality", qualityValue);
-        formData.append("response_format", "b64_json");
+                    requestBody = {
+                        model: "gpt-4.1",
+                        input: [
+                            {
+                                role: "user",
+                                content: contentArray
+                            }
+                        ],
+                        tools: [{ 
+                            type: "image_generation",
+                            output_format: "png",
+                            quality: qualityValue, // Use the actual quality value from the UI
+                            size: imageSize // Use the actual pixel dimensions from imageSize variable
+                        }],
+                        tool_choice: { type: "image_generation" } // Force image generation
+                    };
+                    
+                    apiEndpoint = 'https://api.openai.com/v1/responses';
+                } else {
+                    console.log('No reference images. Using standard image generation API...');
+                    
+                    requestBody = {
+                        model: "gpt-image-1",
+                        size: imageSize,
+                        quality: qualityValue,
+                        output_format: "png",
+                        prompt: `${promptPrefix} ${prompt}.`
+                    };
+                    
+                    apiEndpoint = 'https://api.openai.com/v1/images/generations';
+                }
 
-        response = await fetch("https://api.openai.com/v1/images/edit", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${window.OPENAI_API_KEY}`
-            },
-            body: formData
-        });
-    } else {
-        console.log('No pasted image. Using standard image generation API...');
-
-        response = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-image-1",
-                size: imageSize,
-                quality: qualityValue,
-                output_format: "png",
-                prompt: `${promptPrefix} ${prompt}.`
-            })
-        });
-    }
+                console.log('API Request Body:', JSON.stringify(requestBody, null, 2));
+                
+                response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
 
                 console.log('Response status:', response.status);
                 const responseText = await response.text();
@@ -498,7 +542,25 @@ let response;
                 const data = JSON.parse(responseText);
                 console.log('Parsed response:', data);
                 
-                if (data.data && data.data[0] && data.data[0].b64_json) {
+                let imageData = null;
+                
+                // Handle different response formats
+                if (imageReferences.length > 0) {
+                    // Handle /responses endpoint format
+                    const imageGenerationOutputs = data.output?.filter(output => output.type === "image_generation_call");
+                    if (imageGenerationOutputs && imageGenerationOutputs.length > 0) {
+                        imageData = imageGenerationOutputs[0].result; // Base64 string
+                    }
+                } else {
+                    // Handle /images/generations endpoint format
+                    if (data.data && data.data[0] && data.data[0].b64_json) {
+                        imageData = data.data[0].b64_json;
+                    } else if (data.data && data.data[0] && data.data[0].url) {
+                        imageData = data.data[0].url;
+                    }
+                }
+                
+                if (imageData) {
                     // Hide both empty message and loader
                     emptyMessage.classList.add('hidden');
                     loader.classList.add('hidden');
@@ -506,7 +568,13 @@ let response;
                     // Create new image as direct child of canvas
                     const img = document.createElement('img');
                     img.className = 'w-full h-full object-contain api-image';
-                    img.src = `data:image/png;base64,${data.data[0].b64_json}`;
+                    
+                    // Handle both base64 data and URLs
+                    if (typeof imageData === 'string' && imageData.startsWith('http')) {
+                        img.src = imageData;
+                    } else {
+                        img.src = `data:image/png;base64,${imageData}`;
+                    }
                     img.alt = prompt;
                     canvas.appendChild(img);
 
@@ -516,8 +584,16 @@ let response;
                         imageActions.classList.remove('hidden');
                     }
 
-                    // Log the revised prompt for reference
-                    console.log('Revised prompt:', data.data[0].revised_prompt);
+                    // Log the revised prompt for reference (different structure for different endpoints)
+                    if (imageReferences.length > 0) {
+                        // /responses endpoint doesn't have revised_prompt in the same place
+                        console.log('Generated with reference images');
+                    } else {
+                        // /images/generations endpoint
+                        if (data.data && data.data[0] && data.data[0].revised_prompt) {
+                            console.log('Revised prompt:', data.data[0].revised_prompt);
+                        }
+                    }
                     
                     // Show the save PDF banner
                     const savePdfBanner = document.querySelector('.save-pdf-banner');
