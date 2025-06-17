@@ -12,12 +12,29 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    console.log('Email function called with body:', event.body);
+    
     const { email, tokens, authCode, plan } = JSON.parse(event.body);
     
+    console.log('Parsed email data:', { email, tokens, authCode, plan });
+    
     if (!email || !tokens || !authCode) {
+      console.error('Missing required parameters:', { email: !!email, tokens: !!tokens, authCode: !!authCode });
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Missing required parameters' })
+      };
+    }
+
+    // Check if Mailjet credentials are available
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      console.error('Mailjet credentials missing:', {
+        hasApiKey: !!process.env.MAILJET_API_KEY,
+        hasSecretKey: !!process.env.MAILJET_SECRET_KEY
+      });
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Email service not configured' })
       };
     }
 
@@ -44,6 +61,9 @@ Happy drawing!
 P.S. This code can only be used once. You'll get a new one if you purchase more tokens.
     `.trim();
 
+    console.log('Sending email via Mailjet...');
+    console.log('Login URL:', loginUrl);
+    
     // Send email via Mailjet
     const result = await mailjet
       .post("send", { 'version': 'v3.1' })
@@ -64,6 +84,9 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
           }
         ]
       });
+
+    console.log('Mailjet response status:', result.response?.status);
+    console.log('Mailjet response body:', JSON.stringify(result.body));
 
     return {
       statusCode: 200,

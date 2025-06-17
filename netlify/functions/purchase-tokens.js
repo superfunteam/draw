@@ -46,20 +46,33 @@ exports.handler = async function(event, context) {
     console.log(`Generated auth code ${authCode} for ${email} with ${tokens} tokens`);
 
     // Send email (we'll call another function for this)
-    const emailResult = await fetch(`${process.env.URL}/.netlify/functions/send-auth-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        tokens,
-        authCode,
-        plan
-      })
-    });
+    console.log('Attempting to send email to:', email);
+    console.log('Site URL:', process.env.URL);
+    
+    try {
+      const emailResult = await fetch(`${process.env.URL}/.netlify/functions/send-auth-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          tokens,
+          authCode,
+          plan
+        })
+      });
 
-    if (!emailResult.ok) {
-      console.error('Email sending failed:', await emailResult.text());
-      // Don't fail the whole operation if email fails
+      console.log('Email function response status:', emailResult.status);
+      const emailText = await emailResult.text();
+      console.log('Email function response:', emailText);
+
+      if (!emailResult.ok) {
+        console.error('Email sending failed with status:', emailResult.status);
+        console.error('Email error details:', emailText);
+      } else {
+        console.log('Email sent successfully');
+      }
+    } catch (emailError) {
+      console.error('Email function call failed:', emailError);
     }
 
     return {
