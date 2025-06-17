@@ -45,34 +45,76 @@ exports.handler = async function(event, context) {
     // For now, just generate auth code and send email
     console.log(`Generated auth code ${authCode} for ${email} with ${tokens} tokens`);
 
-    // Send email (we'll call another function for this)
+    // Send email directly (not via another function)
     console.log('Attempting to send email to:', email);
-    console.log('Site URL:', process.env.URL);
     
     try {
-      const emailResult = await fetch(`${process.env.URL}/.netlify/functions/send-auth-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          tokens,
-          authCode,
-          plan
-        })
-      });
-
-      console.log('Email function response status:', emailResult.status);
-      const emailText = await emailResult.text();
-      console.log('Email function response:', emailText);
-
-      if (!emailResult.ok) {
-        console.error('Email sending failed with status:', emailResult.status);
-        console.error('Email error details:', emailText);
-      } else {
-        console.log('Email sent successfully');
+      // Check if Mailjet credentials are available
+      if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+        console.error('Mailjet credentials missing');
+        throw new Error('Email service not configured');
       }
+
+      const mailjet = require('node-mailjet').apiConnect(
+        process.env.MAILJET_API_KEY,
+        process.env.MAILJET_SECRET_KEY
+      );
+
+      const siteUrl = process.env.URL || 'https://draw.superfun.games';
+      const loginUrl = `${siteUrl}/?auth=${authCode}`;
+
+      const emailContent = `
+Hi there!
+
+Thanks for getting tokens for Superfun Draw! Here are your details:
+
+🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+🪙 Tokens: ${tokens}
+🔑 One-time login code: ${authCode}
+
+Click here to log in and start creating:
+${loginUrl}
+
+Or visit the site and use your 8-digit code: ${authCode}
+
+Happy drawing!
+- The Superfun Draw Team
+
+P.S. This code can only be used once. You'll get a new one if you purchase more tokens.
+      `.trim();
+
+      console.log('Sending email via Mailjet...');
+      console.log('Login URL:', loginUrl);
+      
+      // Send email via Mailjet
+      const result = await mailjet
+        .post("send", { 'version': 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+                Email: "noreply@superfun.games",
+                Name: "Superfun Draw"
+              },
+              To: [
+                {
+                  Email: email
+                }
+              ],
+              Subject: `Your Superfun Draw tokens are ready! (${tokens} tokens)`,
+              TextPart: emailContent
+            }
+          ]
+        });
+
+      console.log('Mailjet response status:', result.response?.status);
+      console.log('Mailjet response body:', JSON.stringify(result.body));
+      console.log('Email sent successfully');
+
     } catch (emailError) {
-      console.error('Email function call failed:', emailError);
+      console.error('Email sending failed:', emailError.message);
+      console.error('Full email error:', emailError);
+      // Don't fail the whole operation if email fails, but log it
     }
 
     return {
