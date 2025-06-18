@@ -2122,7 +2122,7 @@ function showUniversalModal(type, options = {}) {
     
     // Set panel width
     const template = modalTemplates[type];
-    panel.className = panel.className.replace(/sm:max-w-\w+/, template.maxWidth);
+    panel.className = panel.className.replace(/sm:max-w-[\w-]+/, template.maxWidth);
     
     // Set content
     if (typeof template.content === 'function') {
