@@ -110,21 +110,14 @@ async function loginWithAuthCode(authCode) {
 // Check if user has sufficient tokens, show modal if not
 function checkTokensBeforeDraw() {
     if (!currentUser) {
-        // Not logged in, show tokens modal
-        const modal = document.getElementById('tokens-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
+        // Not logged in, show buy tokens modal
+        showModal('tokens-modal');
         return false;
     }
     
     if (currentUser.tokens <= 0) {
-        // No tokens left, show modal
-        alert('You have no tokens remaining. Please purchase more tokens to continue.');
-        const modal = document.getElementById('tokens-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
+        // No tokens left, show buy tokens modal
+        showModal('tokens-modal');
         return false;
     }
     
@@ -814,6 +807,11 @@ function attachButtonListeners(drawGroup) {
         aiButton.parentNode.replaceChild(newAiButton, aiButton);
         
         newAiButton.addEventListener('click', async () => {
+            // Check if user is logged in before allowing improve functionality
+            if (!checkTokensBeforeDraw()) {
+                return;
+            }
+            
             // Get the textarea and canvas elements
             const textarea = drawGroup.querySelector('textarea');
             const canvas = drawGroup.querySelector('.canvas');
@@ -1054,6 +1052,11 @@ drawingsSelect.addEventListener('change', () => {
 
 // Create button functionality
 document.querySelector('.actions .write').addEventListener('click', async () => {
+    // Check if user is logged in before allowing story generation
+    if (!checkTokensBeforeDraw()) {
+        return;
+    }
+    
     const button = document.querySelector('.actions .write');
     const promptTextarea = document.getElementById('prompt');
     const drawingsSelect = document.getElementById('drawings');
