@@ -19,8 +19,13 @@ exports.handler = async (event) => {
     try {
         if (process.env.STRIPE_WEBHOOK_SECRET) {
             const sig = event.headers['stripe-signature'];
+            // For Netlify Functions, we need to handle the raw body
+            const rawBody = event.isBase64Encoded 
+                ? Buffer.from(event.body, 'base64').toString('utf8')
+                : event.body;
+            
             stripeEvent = stripe.webhooks.constructEvent(
-                event.body,
+                rawBody,
                 sig,
                 process.env.STRIPE_WEBHOOK_SECRET
             );

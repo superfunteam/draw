@@ -12,9 +12,6 @@
   to = "/index.html"
   status = 200
 
-# Stripe webhook needs raw body for signature verification
-[[functions]]
-  path = "/.netlify/functions/stripe-webhook"
-  [functions.settings]
-    type = "synchronous"
-    raw_body = true 
+# Stripe webhook configuration
+[functions."stripe-webhook"]
+  external_node_modules = ["stripe"] 
