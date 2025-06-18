@@ -1208,6 +1208,10 @@ document.querySelector('.actions .write').addEventListener('click', async () => 
     button.querySelector('span').textContent = 'Thinking...';
     svgIcon.classList.add('animate-pulse');
     
+    // Start loading animation for all textareas
+    const drawGroups = document.querySelectorAll('.draw-group');
+    drawGroups.forEach(group => startTextareaLoadingAnimation(group));
+    
     try {
         // Check preset to determine story generation approach
         const presetSelect = document.getElementById('preset');
@@ -1329,6 +1333,10 @@ And so on. Do not use markdown formatting, asterisks, or any special characters.
         button.disabled = false;
         button.querySelector('span').textContent = originalText;
         svgIcon.classList.remove('animate-pulse');
+        
+        // Stop loading animation for all textareas
+        const drawGroups = document.querySelectorAll('.draw-group');
+        drawGroups.forEach(group => stopTextareaLoadingAnimation(group));
     }
 });
 
