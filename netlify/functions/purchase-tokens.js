@@ -93,7 +93,7 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
           Messages: [
             {
               From: {
-                Email: "clark@supefun.team",
+                Email: "clark@superfun.team",
                 Name: "Superfun Draw"
               },
               To: [
