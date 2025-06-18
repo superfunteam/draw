@@ -2645,6 +2645,11 @@ async function handlePaymentReturn() {
     const sessionId = urlParams.get('session_id');
     const canceled = urlParams.has('canceled');
     
+    console.log('handlePaymentReturn called');
+    console.log('URL search:', window.location.search);
+    console.log('Session ID:', sessionId);
+    console.log('Canceled:', canceled);
+    
     if (sessionId) {
         console.log('Payment success detected, session:', sessionId);
         
@@ -2682,6 +2687,8 @@ async function handlePaymentReturn() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing...');
+    
     // Load auth state
     loadAuthState();
     
@@ -2689,6 +2696,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeUniversalModal();
     
     // Handle payment returns
+    console.log('About to call handlePaymentReturn');
     handlePaymentReturn();
     
     // Update PDF banner visibility
