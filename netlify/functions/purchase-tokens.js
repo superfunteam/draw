@@ -1,8 +1,37 @@
 // Netlify database functions are available in the runtime
 
+// Simple in-memory store for users (simulates database)
+// In production, this would be a real database
+global.userStore = global.userStore || {};
+
+// Add a test user for debugging (simulates existing user in database)
+// This will help test the "existing user" flow
+if (!global.userStore['test@example.com']) {
+  global.userStore['test@example.com'] = {
+    email: 'test@example.com',
+    tokens: 50000,
+    lastUpdated: Date.now()
+  };
+}
+
 // Helper function to generate 8-digit random string
 function generateAuthCode() {
   return Math.random().toString(36).substring(2, 10).padEnd(8, '0').substring(0, 8);
+}
+
+// Helper function to find user by email
+function findUserByEmail(email) {
+  return global.userStore[email.toLowerCase()] || null;
+}
+
+// Helper function to create or update user
+function saveUser(email, tokens) {
+  global.userStore[email.toLowerCase()] = {
+    email: email,
+    tokens: tokens,
+    lastUpdated: Date.now()
+  };
+  return global.userStore[email.toLowerCase()];
 }
 
 exports.handler = async function(event, context) {
@@ -38,15 +67,33 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Determine if user is logged in (has currentTokens passed)
+    // Check if user exists in our store
+    const existingUser = findUserByEmail(email);
+    
+    // Determine if user is logged in (has currentTokens passed) vs existing user
     const isLoggedInUser = currentTokens !== undefined && currentTokens !== null;
-    const previousTokens = isLoggedInUser ? currentTokens : 0;
+    
+    let previousTokens;
+    if (isLoggedInUser) {
+      // User is currently logged in, use their current tokens
+      previousTokens = currentTokens;
+    } else if (existingUser) {
+      // User exists but not logged in, use stored tokens
+      previousTokens = existingUser.tokens;
+    } else {
+      // New user
+      previousTokens = 0;
+    }
+    
     const newTotalTokens = previousTokens + tokens;
     
     // Generate auth code (only needed for new users or logged-out purchases)
     const authCode = generateAuthCode();
     
-    console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}`);
+    console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
+    
+    // Save/update user in store
+    saveUser(email, newTotalTokens);
     
     // Store auth code with token data for login (simulates database)
     // In production, this would be stored in a real database
@@ -75,7 +122,9 @@ exports.handler = async function(event, context) {
       const siteUrl = process.env.URL || 'https://draw.superfun.games';
       const loginUrl = `${siteUrl}/?auth=${authCode}`;
 
-      // Different email content based on whether user is logged in
+      // Different email content based on user status
+      const isNewUser = !existingUser && !isLoggedInUser;
+      
       const emailContent = isLoggedInUser ? `
 Hi there!
 
@@ -90,13 +139,33 @@ Your tokens have been automatically added to your account. You can start using t
 
 Happy drawing!
 - The Superfun Draw Team
+      `.trim() : existingUser ? `
+Hi there!
+
+Great news! Your token purchase has been processed and added to your account.
+
+🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+🪙 Tokens Purchased: ${tokens.toLocaleString()}
+💰 Previous Balance: ${previousTokens.toLocaleString()}
+🎉 New Total Balance: ${newTotalTokens.toLocaleString()}
+🔑 One-time login code: ${authCode}
+
+Click here to log in and access your tokens:
+${loginUrl}
+
+Or visit the site and use your 8-digit code: ${authCode}
+
+Happy drawing!
+- The Superfun Draw Team
+
+P.S. This code can only be used once. You'll get a new one if you purchase more tokens.
       `.trim() : `
 Hi there!
 
-Thanks for getting tokens for Superfun Draw! Here are your details:
+Welcome to Superfun Draw! Thanks for your first token purchase.
 
 🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
-🪙 Tokens: ${newTotalTokens.toLocaleString()}
+🪙 Welcome tokens: ${newTotalTokens.toLocaleString()}
 🔑 One-time login code: ${authCode}
 
 Click here to log in and start creating:
@@ -130,7 +199,9 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
               ],
               Subject: isLoggedInUser ? 
                 `Tokens added to your account! (${newTotalTokens.toLocaleString()} total)` :
-                `Your Superfun Draw tokens are ready! (${newTotalTokens.toLocaleString()} tokens)`,
+                existingUser ?
+                `More tokens added! (${newTotalTokens.toLocaleString()} total)` :
+                `Welcome to Superfun Draw! (${newTotalTokens.toLocaleString()} tokens)`,
               TextPart: emailContent
             }
           ]

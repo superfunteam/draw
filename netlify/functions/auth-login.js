@@ -1,8 +1,9 @@
 // Database functions will be set up on Netlify
 
-// Simple in-memory store for auth codes and their associated token amounts
+// Simple in-memory store for auth codes and users (shared with other functions)
 // In production, this would be in a database
 global.authCodeStore = global.authCodeStore || {};
+global.userStore = global.userStore || {};
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {

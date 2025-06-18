@@ -1,6 +1,25 @@
+// Simple in-memory store for users (simulates database) - shared with purchase-tokens
+global.userStore = global.userStore || {};
+global.authCodeStore = global.authCodeStore || {};
+
 // Helper function to generate 8-digit random string
 function generateAuthCode() {
   return Math.random().toString(36).substring(2, 10).padEnd(8, '0').substring(0, 8);
+}
+
+// Helper function to find user by email
+function findUserByEmail(email) {
+  return global.userStore[email.toLowerCase()] || null;
+}
+
+// Helper function to create or update user
+function saveUser(email, tokens) {
+  global.userStore[email.toLowerCase()] = {
+    email: email,
+    tokens: tokens,
+    lastUpdated: Date.now()
+  };
+  return global.userStore[email.toLowerCase()];
 }
 
 exports.handler = async function(event, context) {
@@ -45,26 +64,36 @@ exports.handler = async function(event, context) {
     // 3. If user doesn't exist, create new user with 1000 tokens
     // 4. Store auth code linked to user for login
     
-    // For now, simulate user lookup and creation
-    console.log(`Login request for ${email}, generated auth code: ${authCode}`);
+    // Check if user exists in our store (shared with purchase-tokens)
+    const existingUser = findUserByEmail(email);
     
-    // Mock user data - in real implementation, this would be from database
-    let userTokens = 1000; // Default for new users
-    let isNewUser = false;
+    let userTokens;
+    let isNewUser;
     
-    // Simulate checking if user exists (for now, assume new user if email doesn't contain 'existing')
-    if (!email.includes('existing')) {
-      isNewUser = true;
-      userTokens = 1000; // New user gets 1k tokens
-      console.log(`Creating new user ${email} with ${userTokens} tokens`);
-    } else {
-      // Existing user - would get their actual balance from DB
-      userTokens = 200000; // Mock existing user balance
+    if (existingUser) {
+      // Existing user - use their stored token balance
+      isNewUser = false;
+      userTokens = existingUser.tokens;
       console.log(`Existing user ${email} has ${userTokens} tokens`);
+    } else {
+      // New user - create with 1000 welcome tokens
+      isNewUser = true;
+      userTokens = 1000;
+      saveUser(email, userTokens);
+      console.log(`Creating new user ${email} with ${userTokens} tokens`);
     }
+    
+    console.log(`Login request for ${email}, generated auth code: ${authCode}`);
 
     const siteUrl = process.env.URL || 'https://draw.superfun.games';
     const loginUrl = `${siteUrl}/?auth=${authCode}`;
+    
+    // Store auth code with correct token data
+    global.authCodeStore[authCode] = {
+      email: email,
+      tokens: userTokens,
+      createdAt: Date.now()
+    };
 
     // Email content based on whether user is new or existing
     const emailContent = isNewUser 
