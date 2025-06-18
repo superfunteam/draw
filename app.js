@@ -1370,34 +1370,47 @@ if (tokensModalBuyButton) {
         e.target.disabled = true;
         
         try {
+            // Include current token count if user is logged in
+            const requestBody = {
+                email,
+                plan: selectedPlan
+            };
+            
+            // Add current tokens if user is logged in
+            if (currentUser && currentUser.tokens !== undefined) {
+                requestBody.currentTokens = currentUser.tokens;
+            }
+            
             const response = await fetch('/.netlify/functions/purchase-tokens', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    plan: selectedPlan
-                })
+                body: JSON.stringify(requestBody)
             });
             
             const data = await response.json();
             
             if (response.ok && data.success) {
-                // Show success message
-                alert(data.message);
-                
-                // Close modal
-                const modal = document.getElementById('tokens-modal');
-                if (modal) {
-                    modal.classList.add('hidden');
+                // If user is logged in, immediately update their token count
+                if (data.isLoggedInUser && currentUser) {
+                    currentUser.tokens = data.newTotalTokens;
+                    saveAuthState(currentUser);
                 }
+                
+                // Close tokens modal
+                hideModal('tokens-modal');
+                
+                // Show purchase success modal
+                showPurchaseSuccessModal(data.message);
                 
                 // Clear form
                 document.getElementById('user-email').value = '';
             } else {
+                // TODO: Could show error in a modal too, but for now keep alert for errors
                 alert(data.error || 'Failed to process purchase');
             }
         } catch (error) {
             console.error('Purchase error:', error);
+            // TODO: Could show error in a modal too, but for now keep alert for errors
             alert('Failed to process purchase. Please try again.');
         } finally {
             // Reset button
@@ -1594,6 +1607,15 @@ function showWelcomeModal(tokens) {
     showModal('welcome-modal');
 }
 
+// Show purchase success modal
+function showPurchaseSuccessModal(message) {
+    const purchaseMessage = document.getElementById('purchase-success-modal-message');
+    if (purchaseMessage) {
+        purchaseMessage.textContent = message;
+    }
+    showModal('purchase-success-modal');
+}
+
 // Show success state in login modal
 function showLoginSuccessState() {
     const formSection = document.getElementById('login-form-section');
@@ -1683,6 +1705,14 @@ document.addEventListener('DOMContentLoaded', () => {
         welcomeContinueBtn.addEventListener('click', () => hideModal('welcome-modal'));
     }
     
+    // Purchase success modal handlers
+    const purchaseSuccessModal = document.getElementById('purchase-success-modal');
+    const purchaseSuccessContinueBtn = document.getElementById('purchase-success-modal-continue-button');
+    
+    if (purchaseSuccessContinueBtn) {
+        purchaseSuccessContinueBtn.addEventListener('click', () => hideModal('purchase-success-modal'));
+    }
+    
     // Allow Enter key to submit in modals
     if (loginEmailInput) {
         loginEmailInput.addEventListener('keypress', (e) => {
@@ -1701,7 +1731,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Close modals when clicking backdrop
-    [loginModal, authCodeModal, welcomeModal].forEach(modal => {
+    [loginModal, authCodeModal, welcomeModal, purchaseSuccessModal].forEach(modal => {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal || e.target.classList.contains('modal-backdrop')) {

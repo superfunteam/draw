@@ -14,7 +14,7 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const { email, plan } = JSON.parse(event.body);
+    const { email, plan, currentTokens } = JSON.parse(event.body);
     
     if (!email || !plan) {
       return {
@@ -38,17 +38,24 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Generate auth code
+    // Determine if user is logged in (has currentTokens passed)
+    const isLoggedInUser = currentTokens !== undefined && currentTokens !== null;
+    const previousTokens = isLoggedInUser ? currentTokens : 0;
+    const newTotalTokens = previousTokens + tokens;
+    
+    // Generate auth code (only needed for new users or logged-out purchases)
     const authCode = generateAuthCode();
     
-    // TODO: Database integration will be set up after deployment
-    // When database is ready, this should:
-    // 1. Check if user exists by email
-    // 2. If user exists, ADD tokens to their current balance (don't replace)
-    // 3. If new user, create with purchased token amount
-    // 4. Store auth code linked to user for login
-    // For now, just generate auth code and send email
-    console.log(`Generated auth code ${authCode} for ${email} with ${tokens} tokens`);
+    console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}`);
+    
+    // Store auth code with token data for login (simulates database)
+    // In production, this would be stored in a real database
+    global.authCodeStore = global.authCodeStore || {};
+    global.authCodeStore[authCode] = {
+      email: email,
+      tokens: newTotalTokens,
+      createdAt: Date.now()
+    };
 
     // Send email directly (not via another function)
     console.log('Attempting to send email to:', email);
@@ -68,13 +75,28 @@ exports.handler = async function(event, context) {
       const siteUrl = process.env.URL || 'https://draw.superfun.games';
       const loginUrl = `${siteUrl}/?auth=${authCode}`;
 
-      const emailContent = `
+      // Different email content based on whether user is logged in
+      const emailContent = isLoggedInUser ? `
+Hi there!
+
+Great news! Your token purchase has been processed and added to your account.
+
+🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+🪙 Tokens Purchased: ${tokens.toLocaleString()}
+💰 Previous Balance: ${previousTokens.toLocaleString()}
+🎉 New Total Balance: ${newTotalTokens.toLocaleString()}
+
+Your tokens have been automatically added to your account. You can start using them right away!
+
+Happy drawing!
+- The Superfun Draw Team
+      `.trim() : `
 Hi there!
 
 Thanks for getting tokens for Superfun Draw! Here are your details:
 
 🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
-🪙 Tokens: ${tokens}
+🪙 Tokens: ${newTotalTokens.toLocaleString()}
 🔑 One-time login code: ${authCode}
 
 Click here to log in and start creating:
@@ -106,7 +128,9 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
                   Email: email
                 }
               ],
-              Subject: `Your Superfun Draw tokens are ready! (${tokens} tokens)`,
+              Subject: isLoggedInUser ? 
+                `Tokens added to your account! (${newTotalTokens.toLocaleString()} total)` :
+                `Your Superfun Draw tokens are ready! (${newTotalTokens.toLocaleString()} tokens)`,
               TextPart: emailContent
             }
           ]
@@ -126,8 +150,12 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: 'Check your email for login instructions!',
-        tokens,
+        message: isLoggedInUser ? 
+          `Tokens added! You now have ${newTotalTokens.toLocaleString()} tokens total.` :
+          'Check your email for login instructions!',
+        tokensPurchased: tokens,
+        newTotalTokens: newTotalTokens,
+        isLoggedInUser: isLoggedInUser,
         email
       })
     };
