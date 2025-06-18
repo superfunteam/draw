@@ -686,15 +686,21 @@ function attachButtonListeners(drawGroup) {
             
             // Get preset and define prompt rules
             const presetSelect = document.getElementById('preset');
+            const drawingsSelect = document.getElementById('drawings');
+            const numImages = drawingsSelect ? drawingsSelect.value : '1';
+            
             let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color. Here is the prompt:"; // Default
             if (presetSelect) {
                 switch (presetSelect.value) {
                     case "Photo":
                         promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors for this prompt:";
                         break;
+                    case "Sketches":
+                        promptPrefix = `Create ${numImages} prompts each that represents the same scene but with minor visual differences. Suggest new body poses for each character. Suggest new faces and motions. Each scene should have the same 'content' but have a different tweak. These will be used by a human artist to start sketching from. Use black and white only, with lines that show character shapes (balls at joints, circles in faces, motion drawing style). Here is the prompt:`;
+                        break;
                     case "None":
-                            promptPrefix = "Create an image exactly in the style as prompted:";
-                            break;
+                        promptPrefix = "Create an image exactly in the style as prompted:";
+                        break;
                     case "Coloring Book":
                     default:
                         promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color. Here is the prompt:";
