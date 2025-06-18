@@ -87,23 +87,26 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // First try to find user by auth code in database
+    // PRIORITY 1: Try to find user by auth code in database (this is the source of truth)
     console.log('DEBUG: Auth-login - Looking up auth code in database:', authCode);
     const dbUser = await findUserByAuthCode(authCode);
     console.log('DEBUG: Auth-login - Found user in database:', dbUser);
     
     let user;
     if (dbUser) {
-      // Use database user data
+      // DATABASE USER FOUND - Use database user data (source of truth)
       user = {
         email: dbUser.email,
         tokens: dbUser.tokens
       };
-      console.log(`Found user in database for auth code: ${authCode}, email: ${dbUser.email}, tokens: ${dbUser.tokens}`);
+      console.log(`✅ DATABASE LOGIN: Found user for auth code: ${authCode}, email: ${dbUser.email}, tokens: ${dbUser.tokens}`);
       
       // Mark auth code as used (one-time use)
       await markAuthCodeUsed(authCode);
     } else {
+      // DATABASE USER NOT FOUND - Auth code may be invalid or expired
+      console.log(`❌ FALLBACK LOGIN: Auth code ${authCode} not found in database, using fallback methods`);
+      
       // Fallback: Try to decode token data from auth code (encoded method)
       const decodedTokens = decodeAuthCode(authCode);
       console.log('DEBUG: Auth-login - Decoded tokens from auth code:', decodedTokens);
@@ -111,10 +114,10 @@ exports.handler = async function(event, context) {
       if (decodedTokens) {
         // Use decoded token data from auth code
         user = {
-          email: 'user@example.com', // Default email for decoded codes
+          email: 'fallback@example.com', // Fallback email for decoded codes
           tokens: decodedTokens
         };
-        console.log(`Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
+        console.log(`⚠️ ENCODED FALLBACK: Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
       } else {
         // Final fallback for testing - simulate different token amounts based on auth code pattern
         let tokens = 200000; // Default micro plan
@@ -131,7 +134,7 @@ exports.handler = async function(event, context) {
           email: 'test@example.com',
           tokens: tokens
         };
-        console.log(`Using final fallback data for auth code: ${authCode}, tokens: ${tokens}`);
+        console.log(`⚠️ PATTERN FALLBACK: Using pattern-based auth code: ${authCode}, tokens: ${tokens}`);
       }
     }
 

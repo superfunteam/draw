@@ -89,6 +89,14 @@ async function loginWithAuthCode(authCode) {
         if (response.ok && data.success) {
             saveAuthState(data.user);
             
+            // Refresh token balance from database to ensure sync (especially for database logins)
+            if (data.user.email && !data.user.email.includes('example.com')) {
+                // Only refresh for real users (not fallback/test users)
+                setTimeout(() => refreshTokensFromDB(), 1000);
+                // Start periodic token validation
+                setTimeout(() => startTokenValidation(), 2000);
+            }
+            
             // Show welcome modal instead of alert
             showWelcomeModal(data.user.tokens);
         } else {
@@ -124,6 +132,42 @@ function checkTokensBeforeDraw() {
     return true;
 }
 
+// Refresh token balance from database to ensure sync
+async function refreshTokensFromDB() {
+    if (!currentUser || !currentUser.email) {
+        console.log('No user logged in, cannot refresh tokens');
+        return false;
+    }
+    
+    try {
+        console.log('Refreshing token balance from database...');
+        const response = await fetch('/.netlify/functions/get-user-tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            const previousTokens = currentUser.tokens;
+            currentUser.tokens = data.tokens;
+            saveAuthState(currentUser);
+            
+            if (previousTokens !== data.tokens) {
+                console.log(`Token balance synced: ${previousTokens} -> ${data.tokens}`);
+            }
+            return true;
+        } else {
+            console.error('Failed to refresh token balance:', data.error);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error refreshing tokens:', error);
+        return false;
+    }
+}
+
 // Deduct tokens after successful API call
 async function deductTokens(tokensUsed) {
     if (!currentUser || !currentUser.email) {
@@ -151,17 +195,42 @@ async function deductTokens(tokensUsed) {
             return true;
         } else {
             console.error('Failed to deduct tokens:', data.error);
+            // Refresh tokens from database if deduction failed (may be stale data)
+            setTimeout(() => refreshTokensFromDB(), 500);
             return false;
         }
     } catch (error) {
         console.error('Token deduction error:', error);
+        // Refresh tokens from database if network error (may be out of sync)
+        setTimeout(() => refreshTokensFromDB(), 500);
         return false;
     }
+}
+
+// Validate token sync periodically (every 30 seconds)
+function startTokenValidation() {
+    if (!currentUser || !currentUser.email || currentUser.email.includes('example.com')) {
+        return; // Skip validation for test users
+    }
+    
+    setInterval(async () => {
+        if (currentUser && currentUser.email && !currentUser.email.includes('example.com')) {
+            const success = await refreshTokensFromDB();
+            if (!success) {
+                console.warn('Token validation failed - database may be unavailable');
+            }
+        }
+    }, 30000); // Every 30 seconds
 }
 
 // Initialize auth on page load
 document.addEventListener('DOMContentLoaded', () => {
     loadAuthState();
+    
+    // Start token validation for logged-in users
+    if (currentUser) {
+        setTimeout(() => startTokenValidation(), 5000); // Start after 5 seconds
+    }
     checkUrlAuth();
 });
 
@@ -1397,6 +1466,9 @@ if (tokensModalBuyButton) {
                 if (data.isLoggedInUser && currentUser) {
                     currentUser.tokens = data.newTotalTokens;
                     saveAuthState(currentUser);
+                    
+                    // Refresh from database to ensure sync after purchase
+                    setTimeout(() => refreshTokensFromDB(), 1000);
                 }
                 
                 // Close tokens modal

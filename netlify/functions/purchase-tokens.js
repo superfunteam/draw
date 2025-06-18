@@ -119,27 +119,32 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Check if user exists in database
+    // ALWAYS check database first for current token balance (single source of truth)
     console.log('DEBUG: Purchase - Looking up email in database:', email.toLowerCase());
     const existingUser = await findUserByEmail(email);
     console.log('DEBUG: Purchase - Found existing user:', existingUser);
     
-    // Determine if user is logged in (has currentTokens passed) vs existing user
+    // Determine if user is logged in (has currentTokens passed from client)
     const isLoggedInUser = currentTokens !== undefined && currentTokens !== null;
     
     let previousTokens;
-    if (isLoggedInUser) {
-      // User is currently logged in, use their current tokens
-      previousTokens = currentTokens;
-    } else if (existingUser) {
-      // User exists but not logged in, use stored tokens
+    if (existingUser) {
+      // User exists in database - ALWAYS use database value as source of truth
       previousTokens = existingUser.tokens;
+      console.log(`🔍 DATABASE BALANCE: Using DB balance ${previousTokens} for ${email} (client sent: ${currentTokens})`);
+      
+      // Warn if client and database values don't match
+      if (isLoggedInUser && currentTokens !== existingUser.tokens) {
+        console.log(`⚠️ TOKEN MISMATCH: Client has ${currentTokens}, DB has ${existingUser.tokens} - using DB value`);
+      }
     } else {
-      // New user
+      // New user - start with 0
       previousTokens = 0;
+      console.log(`🆕 NEW USER: Starting with 0 tokens for ${email}`);
     }
     
     const newTotalTokens = previousTokens + tokens;
+    console.log(`💰 TOKEN CALCULATION: ${previousTokens} + ${tokens} = ${newTotalTokens}`);
     
     // Generate auth code with embedded token data (solves serverless persistence issue)
     const authCode = generateAuthCodeWithTokens(email, newTotalTokens);
