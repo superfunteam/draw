@@ -1,5 +1,9 @@
 [build]
+  command = "npm install"
   publish = "."
+  
+[functions]
+  node_bundler = "esbuild"
 
 [context.production]
   environment = { OPENAI_API = "", MAILJET_API_KEY = "", MAILJET_SECRET_KEY = "" }
