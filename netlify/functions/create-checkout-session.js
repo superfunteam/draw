@@ -1,4 +1,21 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Initialize Stripe with error checking
+let stripe;
+try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('STRIPE_SECRET_KEY not found in environment');
+    }
+    if (!process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
+        throw new Error('Invalid STRIPE_SECRET_KEY format - should start with sk_test_ or sk_live_');
+    }
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+} catch (error) {
+    console.error('Stripe initialization error:', error.message);
+}
+
+// Get URL for redirects
+const getBaseUrl = () => {
+    return process.env.URL || 'http://localhost:8888';
+};
 
 // Token package pricing
 const PRICING = {
@@ -24,10 +41,24 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
 
+    if (!stripe) {
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ 
+                error: 'Stripe not configured properly', 
+                details: 'Check server logs for configuration issues' 
+            }) 
+        };
+    }
+
     try {
+        console.log('Stripe Secret Key exists:', !!process.env.STRIPE_SECRET_KEY);
+        console.log('Request body:', event.body);
+        
         const { email, plan } = JSON.parse(event.body);
 
         if (!email || !plan || !PRICING[plan]) {
+            console.error('Invalid request:', { email, plan, validPlans: Object.keys(PRICING) });
             return {
                 statusCode: 400,
                 body: JSON.stringify({ error: 'Invalid email or plan' })
@@ -51,8 +82,8 @@ exports.handler = async (event) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${process.env.URL}/?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.URL}/?canceled=true`,
+            success_url: `${getBaseUrl()}/?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${getBaseUrl()}/?canceled=true`,
             customer_email: email,
             metadata: {
                 email: email,
