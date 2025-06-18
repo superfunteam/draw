@@ -481,12 +481,17 @@ function attachButtonListeners(drawGroup) {
             delete preview.dataset.pastedImageUrl;
         });
 
-        // Add click listeners to image preview slots for file picking
+        // Add click listeners to image preview slots for file picking or lightbox opening
         previews.forEach((previewSlot, slotIndex) => {
             previewSlot.addEventListener('click', () => {
-                // Only trigger file input if the slot doesn't already have a pasted/chosen image
-                // Or, if we want to allow changing it, remove this condition.
-                if (!previewSlot.dataset.pastedImageUrl) {
+                // If there's already an image, open the lightbox
+                if (previewSlot.dataset.pastedImageUrl) {
+                    const img = previewSlot.querySelector('img');
+                    if (img) {
+                        openLightbox(img, 'prompt');
+                    }
+                } else {
+                    // No image yet, open file picker
                     const fileInput = document.createElement('input');
                     fileInput.type = 'file';
                     fileInput.accept = 'image/*';
@@ -1428,29 +1433,64 @@ document.getElementById('make-pdf').addEventListener('click', async () => {
 const lightboxModal = document.getElementById('lightbox-modal');
 const lightboxImage = document.getElementById('lightbox-image');
 const lightboxClose = document.getElementById('lightbox-close');
+const lightboxDelete = document.getElementById('lightbox-delete');
 const lightboxPrev = document.getElementById('lightbox-prev');
 const lightboxNext = document.getElementById('lightbox-next');
 const drawingsContainerForLightbox = document.querySelector('.drawings'); // Event delegation target
 
 let currentLightboxImageIndex = 0;
 let galleryApiImages = [];
+let galleryPromptImages = [];
+let currentLightboxType = 'api'; // 'api' or 'prompt'
+let currentPromptImageElement = null;
 
 function updateLightboxNav() {
+    const currentGallery = currentLightboxType === 'api' ? galleryApiImages : galleryPromptImages;
     lightboxPrev.disabled = currentLightboxImageIndex === 0;
-    lightboxNext.disabled = currentLightboxImageIndex === galleryApiImages.length - 1;
+    lightboxNext.disabled = currentLightboxImageIndex === currentGallery.length - 1;
+    
+    // Show/hide delete button based on image type
+    if (currentLightboxType === 'prompt') {
+        lightboxDelete.classList.remove('hidden');
+    } else {
+        lightboxDelete.classList.add('hidden');
+    }
 }
 
-function openLightbox(imageElement) {
-    galleryApiImages = Array.from(document.querySelectorAll('.api-image'));
-    const clickedImageSrc = imageElement.src;
-    currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
-
-    if (currentLightboxImageIndex === -1) { 
-        console.error("Clicked image not found in galleryApiImages");
-        return;
+function openLightbox(imageElement, imageType = 'api') {
+    currentLightboxType = imageType;
+    
+    if (imageType === 'api') {
+        galleryApiImages = Array.from(document.querySelectorAll('.api-image'));
+        const clickedImageSrc = imageElement.src;
+        currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
+        
+        if (currentLightboxImageIndex === -1) { 
+            console.error("Clicked image not found in galleryApiImages");
+            return;
+        }
+        
+        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        currentPromptImageElement = null;
+    } else if (imageType === 'prompt') {
+        // For prompt images, we need to get the background image
+        const drawGroup = imageElement.closest('.draw-group');
+        if (!drawGroup) return;
+        
+        galleryPromptImages = Array.from(drawGroup.querySelectorAll('.prompt-image-preview'))
+            .filter(preview => preview.dataset.pastedImageUrl);
+        
+        currentLightboxImageIndex = galleryPromptImages.findIndex(preview => preview === imageElement);
+        
+        if (currentLightboxImageIndex === -1) {
+            console.error("Clicked prompt image not found in gallery");
+            return;
+        }
+        
+        lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
+        currentPromptImageElement = imageElement;
     }
 
-    lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
     lightboxModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; 
     updateLightboxNav();
@@ -1461,22 +1501,95 @@ function closeLightbox() { // This function needs to be accessible by modals.js 
         lightboxModal.classList.add('hidden');
         document.body.style.overflow = ''; 
         galleryApiImages = [];
+        galleryPromptImages = [];
         currentLightboxImageIndex = 0;
+        currentLightboxType = 'api';
+        currentPromptImageElement = null;
     }
 }
 
 function showNextImage() {
-    if (currentLightboxImageIndex < galleryApiImages.length - 1) {
+    const currentGallery = currentLightboxType === 'api' ? galleryApiImages : galleryPromptImages;
+    if (currentLightboxImageIndex < currentGallery.length - 1) {
         currentLightboxImageIndex++;
-        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        if (currentLightboxType === 'api') {
+            lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+            currentPromptImageElement = null;
+        } else {
+            lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
+            currentPromptImageElement = galleryPromptImages[currentLightboxImageIndex];
+        }
         updateLightboxNav();
     }
 }
 
 function showPrevImage() {
+    const currentGallery = currentLightboxType === 'api' ? galleryApiImages : galleryPromptImages;
     if (currentLightboxImageIndex > 0) {
         currentLightboxImageIndex--;
-        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        if (currentLightboxType === 'api') {
+            lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+            currentPromptImageElement = null;
+        } else {
+            lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
+            currentPromptImageElement = galleryPromptImages[currentLightboxImageIndex];
+        }
+        updateLightboxNav();
+    }
+}
+
+function deletePromptImage() {
+    if (currentLightboxType !== 'prompt' || !currentPromptImageElement) return;
+    
+    // Clear the image data
+    currentPromptImageElement.style.backgroundImage = '';
+    delete currentPromptImageElement.dataset.pastedImageUrl;
+    
+    // Show the plus icon again
+    const plusIcon = currentPromptImageElement.querySelector('.plus-icon');
+    if (plusIcon) plusIcon.classList.remove('hidden');
+    
+    // Update the draw group's next paste slot index
+    const drawGroup = currentPromptImageElement.closest('.draw-group');
+    if (drawGroup) {
+        // Find the lowest available slot number
+        const allPreviews = drawGroup.querySelectorAll('.prompt-image-preview');
+        let nextSlot = 1;
+        for (let i = 0; i < allPreviews.length; i++) {
+            if (!allPreviews[i].dataset.pastedImageUrl) {
+                nextSlot = i + 1;
+                break;
+            }
+        }
+        drawGroup.dataset.nextPasteSlotIndex = nextSlot.toString();
+        
+        // Hide empty slots that should be hidden (only show slots 1 through nextSlot)
+        allPreviews.forEach((preview, index) => {
+            if (index + 1 > nextSlot && !preview.dataset.pastedImageUrl) {
+                preview.classList.add('hidden');
+                const icon = preview.querySelector('.plus-icon');
+                if (icon) icon.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Remove from gallery and update lightbox
+    galleryPromptImages = galleryPromptImages.filter(img => img !== currentPromptImageElement);
+    
+    if (galleryPromptImages.length === 0) {
+        // No more images, close lightbox
+        closeLightbox();
+    } else {
+        // Adjust index if needed
+        if (currentLightboxImageIndex >= galleryPromptImages.length) {
+            currentLightboxImageIndex = galleryPromptImages.length - 1;
+        }
+        
+        // Update display
+        if (galleryPromptImages[currentLightboxImageIndex]) {
+            lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
+            currentPromptImageElement = galleryPromptImages[currentLightboxImageIndex];
+        }
         updateLightboxNav();
     }
 }
