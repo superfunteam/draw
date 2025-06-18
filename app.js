@@ -2099,7 +2099,7 @@ const modalTemplates = {
                 <div>
                     <label for="universal-login-email" class="block text-sm font-medium text-gray-900">Email address</label>
                     <div class="mt-2">
-                        <input type="email" id="universal-login-email" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+                        <input type="email" id="universal-login-email" class="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
                     </div>
                 </div>
             </div>
@@ -2132,7 +2132,7 @@ const modalTemplates = {
             <div class="mt-6">
                 <label for="universal-user-email" class="block text-sm font-medium text-gray-900">Email address</label>
                 <div class="mt-2">
-                    <input type="email" id="universal-user-email" class="block w-full rounded-md border-0 py-1.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+                    <input type="email" id="universal-user-email" class="block w-full rounded-md border-0 py-2.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
                 </div>
             </div>
 
@@ -2382,6 +2382,12 @@ function setupModalHandlers(type, options) {
     // Tokens modal handlers
     if (type === 'tokens') {
         const purchaseBtn = document.getElementById('universal-purchase-btn');
+        const emailInput = document.getElementById('universal-user-email');
+        
+        // Prefill email if user is logged in
+        if (emailInput && currentUser && currentUser.email) {
+            emailInput.value = currentUser.email;
+        }
         
         if (purchaseBtn) {
             purchaseBtn.setAttribute('data-universal-handler', 'true');
