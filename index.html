@@ -450,9 +450,14 @@
     </div>
 
     <!-- FAB to add new draw group -->
-    <button type="button" class="add-draw-group fixed z-30 right-6 lg:right-8 bottom-6 lg:bottom-8 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 cursor-pointer hover:scale-110 origin-center">
+    <button type="button" class="add-draw-group fixed z-30 right-6 lg:right-8 bottom-6 lg:bottom-8 text-white shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 cursor-pointer hover:scale-110 origin-center w-14 h-14 flex items-center justify-center relative group">
       <span class="sr-only">Add new draw group</span>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-6">
+      <!-- Wobble shape background -->
+      <svg class="absolute inset-0 w-full h-full text-indigo-600 group-hover:text-indigo-700 transition-colors duration-300" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="m55.5 7.8008c5.8984-2.8008 12.898-0.5 15.898 5.1992 1.6992 3.3008 4.8984 5.6016 8.6016 6.1992 6.3984 1.1016 10.699 7.1016 9.8008 13.5-0.5 3.6992 0.69922 7.3984 3.3008 10.102 4.5 4.6992 4.5 12.102 0 16.699-2.6016 2.6992-3.8008 6.3984-3.3008 10.102 0.89844 6.3984-3.4023 12.398-9.8008 13.5-3.6992 0.60156-6.8008 2.8984-8.6016 6.1992-3 5.6992-10.102 8-15.898 5.1992-3.3008-1.6016-7.1992-1.6016-10.602 0-5.7969 2.8984-12.898 0.60156-15.898-5.1992-1.6992-3.3008-4.8984-5.6016-8.6016-6.1992-6.2969-1.1016-10.699-7.1016-9.7969-13.5 0.5-3.6992-0.69922-7.3984-3.3008-10.102-4.5-4.6992-4.5-12.102 0-16.699 2.6016-2.6992 3.8008-6.3984 3.3008-10.102-0.89844-6.3984 3.3984-12.398 9.8008-13.5 3.6992-0.60156 6.8008-2.8984 8.6016-6.1992 3-5.6992 10.102-8 15.898-5.1992 3.3984 1.6992 7.2969 1.6992 10.598 0z" fill="currentColor"/>
+      </svg>
+      <!-- Plus icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-6 relative z-10">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
       </svg>
     </button>
