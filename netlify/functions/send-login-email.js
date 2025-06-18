@@ -46,9 +46,9 @@ function checkEmailExists(email) {
 
 // Database helper functions using real Netlify DB
 async function getDbClient() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
   if (!databaseUrl) {
-    console.error('DATABASE_URL environment variable not set');
+    console.error('NETLIFY_DATABASE_URL environment variable not set');
     return null;
   }
   return neon(databaseUrl);
