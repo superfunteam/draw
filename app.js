@@ -1602,6 +1602,7 @@ if (drawingsContainerForLightbox) {
 }
 
 lightboxClose?.addEventListener('click', closeLightbox);
+lightboxDelete?.addEventListener('click', deletePromptImage);
 lightboxPrev?.addEventListener('click', showPrevImage);
 lightboxNext?.addEventListener('click', showNextImage);
 
