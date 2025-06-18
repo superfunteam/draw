@@ -2,6 +2,8 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.6",
     "tailwindcss": "^4.1.6",
-    "node-mailjet": "^6.0.5"
+    "node-mailjet": "^6.0.5",
+    "@neondatabase/serverless": "^0.9.0",
+    "pg": "^8.11.0"
   }
 }

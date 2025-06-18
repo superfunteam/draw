@@ -1,31 +1,58 @@
-// Netlify database functions are available in the runtime
+// Netlify database integration using Neon
+const { neon } = require('@neondatabase/serverless');
 
-// Database helper functions (TODO: implement real Netlify DB when available)
-// For now, using enhanced in-memory store with better persistence simulation
-global.userStore = global.userStore || {};
+// Database helper functions using real Netlify DB
+async function getDbClient() {
+  // Use Netlify DB connection string from environment
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error('DATABASE_URL environment variable not set');
+    return null;
+  }
+  return neon(databaseUrl);
+}
 
 async function findUserByEmail(email) {
-  // TODO: Replace with real database call
-  // const user = await netlifyDB.query('SELECT * FROM users WHERE email = ?', [email]);
-  
-  // For now, check in-memory store
-  return global.userStore[email.toLowerCase()] || null;
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return null;
+    }
+    
+    const users = await sql('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+    return users.length > 0 ? users[0] : null;
+  } catch (error) {
+    console.error('Database query error:', error);
+    return null;
+  }
 }
 
 async function saveUser(email, tokens, authCode = null) {
-  // TODO: Replace with real database call
-  // await netlifyDB.query('INSERT INTO users ... ON CONFLICT UPDATE ...', [email, tokens, authCode]);
-  
-  // For now, save to in-memory store
-  global.userStore[email.toLowerCase()] = {
-    email: email.toLowerCase(),
-    tokens: tokens,
-    auth_code: authCode,
-    lastUpdated: Date.now()
-  };
-  
-  console.log('SAVED USER TO STORE:', global.userStore[email.toLowerCase()]);
-  return global.userStore[email.toLowerCase()];
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return null;
+    }
+    
+    // Use INSERT ... ON CONFLICT for upsert behavior
+    const result = await sql(`
+      INSERT INTO users (email, tokens, auth_code, auth_code_used, updated_at) 
+      VALUES ($1, $2, $3, FALSE, NOW())
+      ON CONFLICT (email) DO UPDATE SET 
+        tokens = EXCLUDED.tokens,
+        auth_code = EXCLUDED.auth_code,
+        auth_code_used = FALSE,
+        updated_at = NOW()
+      RETURNING *
+    `, [email.toLowerCase(), tokens, authCode]);
+    
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Database save error:', error);
+    return null;
+  }
 }
 
 // Helper function to generate 8-digit random string
@@ -92,11 +119,8 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // DEBUG: Log current state of user store
-    console.log('DEBUG: Purchase - Current userStore contents:', JSON.stringify(global.userStore, null, 2));
-    console.log('DEBUG: Purchase - Looking up email:', email.toLowerCase());
-    
     // Check if user exists in database
+    console.log('DEBUG: Purchase - Looking up email in database:', email.toLowerCase());
     const existingUser = await findUserByEmail(email);
     console.log('DEBUG: Purchase - Found existing user:', existingUser);
     
@@ -124,16 +148,7 @@ exports.handler = async function(event, context) {
     
     // Save/update user in database
     const savedUser = await saveUser(email, newTotalTokens, authCode);
-    console.log('DEBUG: Purchase - Saved user:', savedUser);
-    
-    // Store auth code with token data for login (simulates database)
-    // In production, this would be stored in a real database
-    global.authCodeStore = global.authCodeStore || {};
-    global.authCodeStore[authCode] = {
-      email: email,
-      tokens: newTotalTokens,
-      createdAt: Date.now()
-    };
+    console.log('DEBUG: Purchase - Saved user to database:', savedUser);
 
     // Send email directly (not via another function)
     console.log('Attempting to send email to:', email);

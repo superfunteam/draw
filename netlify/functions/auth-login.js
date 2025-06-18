@@ -1,9 +1,47 @@
-// Database functions will be set up on Netlify
+// Netlify database integration using Neon
+const { neon } = require('@neondatabase/serverless');
 
-// Simple in-memory store for auth codes and users (shared with other functions)
-// In production, this would be in a database
-global.authCodeStore = global.authCodeStore || {};
-global.userStore = global.userStore || {};
+// Database helper functions using real Netlify DB
+async function getDbClient() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error('DATABASE_URL environment variable not set');
+    return null;
+  }
+  return neon(databaseUrl);
+}
+
+async function findUserByAuthCode(authCode) {
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return null;
+    }
+    
+    const users = await sql('SELECT * FROM users WHERE auth_code = $1 AND auth_code_used = FALSE', [authCode]);
+    return users.length > 0 ? users[0] : null;
+  } catch (error) {
+    console.error('Database query error:', error);
+    return null;
+  }
+}
+
+async function markAuthCodeUsed(authCode) {
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return false;
+    }
+    
+    await sql('UPDATE users SET auth_code_used = TRUE WHERE auth_code = $1', [authCode]);
+    return true;
+  } catch (error) {
+    console.error('Database update error:', error);
+    return false;
+  }
+}
 
 // Helper function to decode token data from auth code (shared with other functions)
 function decodeAuthCode(authCode) {
@@ -49,36 +87,34 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // Try to decode token data from auth code (new method)
-    const decodedTokens = decodeAuthCode(authCode);
-    console.log('DEBUG: Auth-login - Decoded tokens from auth code:', decodedTokens);
+    // First try to find user by auth code in database
+    console.log('DEBUG: Auth-login - Looking up auth code in database:', authCode);
+    const dbUser = await findUserByAuthCode(authCode);
+    console.log('DEBUG: Auth-login - Found user in database:', dbUser);
     
     let user;
-    if (decodedTokens) {
-      // Use decoded token data from auth code
+    if (dbUser) {
+      // Use database user data
       user = {
-        email: 'user@example.com', // Default email for decoded codes
-        tokens: decodedTokens
+        email: dbUser.email,
+        tokens: dbUser.tokens
       };
-      console.log(`Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
+      console.log(`Found user in database for auth code: ${authCode}, email: ${dbUser.email}, tokens: ${dbUser.tokens}`);
+      
+      // Mark auth code as used (one-time use)
+      await markAuthCodeUsed(authCode);
     } else {
-      // Fallback: Check if auth code exists in our store (legacy method)
-      console.log('DEBUG: Auth-login - Current authCodeStore contents:', JSON.stringify(global.authCodeStore, null, 2));
-      console.log('DEBUG: Auth-login - Looking for auth code:', authCode);
+      // Fallback: Try to decode token data from auth code (encoded method)
+      const decodedTokens = decodeAuthCode(authCode);
+      console.log('DEBUG: Auth-login - Decoded tokens from auth code:', decodedTokens);
       
-      const storedData = global.authCodeStore[authCode];
-      console.log('DEBUG: Auth-login - Found stored data:', storedData);
-      
-      if (storedData) {
-        // Use actual purchased data
+      if (decodedTokens) {
+        // Use decoded token data from auth code
         user = {
-          email: storedData.email,
-          tokens: storedData.tokens
+          email: 'user@example.com', // Default email for decoded codes
+          tokens: decodedTokens
         };
-        console.log(`Found stored data for auth code: ${authCode}, tokens: ${storedData.tokens}`);
-        
-        // Remove used auth code (one-time use)
-        delete global.authCodeStore[authCode];
+        console.log(`Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
       } else {
         // Final fallback for testing - simulate different token amounts based on auth code pattern
         let tokens = 200000; // Default micro plan

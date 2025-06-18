@@ -1,6 +1,5 @@
-// Simple in-memory store for users (simulates database) - shared with purchase-tokens
-global.userStore = global.userStore || {};
-global.authCodeStore = global.authCodeStore || {};
+// Netlify database integration using Neon
+const { neon } = require('@neondatabase/serverless');
 
 // Helper function to generate 8-digit random string
 function generateAuthCode() {
@@ -45,19 +44,56 @@ function checkEmailExists(email) {
   return null; // New user
 }
 
-// Helper function to find user by email
-function findUserByEmail(email) {
-  return global.userStore[email.toLowerCase()] || null;
+// Database helper functions using real Netlify DB
+async function getDbClient() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error('DATABASE_URL environment variable not set');
+    return null;
+  }
+  return neon(databaseUrl);
 }
 
-// Helper function to create or update user
-function saveUser(email, tokens) {
-  global.userStore[email.toLowerCase()] = {
-    email: email,
-    tokens: tokens,
-    lastUpdated: Date.now()
-  };
-  return global.userStore[email.toLowerCase()];
+async function findUserByEmail(email) {
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return null;
+    }
+    
+    const users = await sql('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+    return users.length > 0 ? users[0] : null;
+  } catch (error) {
+    console.error('Database query error:', error);
+    return null;
+  }
+}
+
+async function saveUser(email, tokens, authCode = null) {
+  try {
+    const sql = await getDbClient();
+    if (!sql) {
+      console.error('Database client not available');
+      return null;
+    }
+    
+    const result = await sql(`
+      INSERT INTO users (email, tokens, auth_code, auth_code_used, updated_at) 
+      VALUES ($1, $2, $3, FALSE, NOW())
+      ON CONFLICT (email) DO UPDATE SET 
+        tokens = EXCLUDED.tokens,
+        auth_code = EXCLUDED.auth_code,
+        auth_code_used = FALSE,
+        updated_at = NOW()
+      RETURNING *
+    `, [email.toLowerCase(), tokens, authCode]);
+    
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Database save error:', error);
+    return null;
+  }
 }
 
 exports.handler = async function(event, context) {
@@ -99,57 +135,37 @@ exports.handler = async function(event, context) {
     // 3. If user doesn't exist, create new user with 1000 tokens
     // 4. Store auth code linked to user for login
     
-    // DEBUG: Log current state of user store
-    console.log('DEBUG: Current userStore contents:', JSON.stringify(global.userStore, null, 2));
-    console.log('DEBUG: Looking up email:', email.toLowerCase());
+    // Check if user exists in database
+    console.log('DEBUG: Looking up email in database:', email.toLowerCase());
     
-    // Check if user exists in our store (shared with purchase-tokens)
-    const existingUser = findUserByEmail(email);
-    console.log('DEBUG: Found existing user in store:', existingUser);
-    
-    // Also check using heuristic method (for cross-function persistence issues)
-    const heuristicUser = checkEmailExists(email);
-    console.log('DEBUG: Heuristic user check:', heuristicUser);
+    const existingUser = await findUserByEmail(email);
+    console.log('DEBUG: Found existing user in database:', existingUser);
     
     let userTokens;
     let isNewUser;
     
     if (existingUser) {
-      // Existing user found in store - use their stored token balance
+      // Existing user found in database - use their stored token balance
       isNewUser = false;
       userTokens = existingUser.tokens;
-      console.log(`Existing user in store: ${email} has ${userTokens} tokens`);
-    } else if (heuristicUser) {
-      // User exists based on heuristic - use heuristic tokens
-      isNewUser = false;
-      userTokens = heuristicUser.tokens;
-      console.log(`Existing user via heuristic: ${email} has ${userTokens} tokens`);
-      // Save to store for this session
-      const savedUser = saveUser(email, userTokens);
-      console.log('DEBUG: Saved heuristic user to store:', savedUser);
+      console.log(`Existing user in database: ${email} has ${userTokens} tokens`);
     } else {
       // New user - create with 1000 welcome tokens
       isNewUser = true;
       userTokens = 1000;
-      const savedUser = saveUser(email, userTokens);
       console.log(`Creating new user ${email} with ${userTokens} tokens`);
-      console.log('DEBUG: Saved new user:', savedUser);
-      console.log('DEBUG: UserStore after save:', JSON.stringify(global.userStore, null, 2));
     }
     
     // Generate auth code with embedded token data (solves serverless persistence issue)
     const authCode = generateAuthCodeWithTokens(email, userTokens);
     console.log(`Login request for ${email}, generated auth code: ${authCode}`);
+    
+    // Save user to database (for new users or update auth code for existing users)
+    const savedUser = await saveUser(email, userTokens, authCode);
+    console.log('DEBUG: Saved user to database:', savedUser);
 
     const siteUrl = process.env.URL || 'https://draw.superfun.games';
     const loginUrl = `${siteUrl}/?auth=${authCode}`;
-    
-    // Store auth code with correct token data
-    global.authCodeStore[authCode] = {
-      email: email,
-      tokens: userTokens,
-      createdAt: Date.now()
-    };
 
     // Email content based on whether user is new or existing
     const emailContent = isNewUser 
