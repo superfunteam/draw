@@ -1,17 +1,31 @@
 // Netlify database functions are available in the runtime
 
-// Simple in-memory store for users (simulates database)
-// In production, this would be a real database
+// Database helper functions (TODO: implement real Netlify DB when available)
+// For now, using enhanced in-memory store with better persistence simulation
 global.userStore = global.userStore || {};
 
-// Add a test user for debugging (simulates existing user in database)
-// This will help test the "existing user" flow
-if (!global.userStore['test@example.com']) {
-  global.userStore['test@example.com'] = {
-    email: 'test@example.com',
-    tokens: 50000,
+async function findUserByEmail(email) {
+  // TODO: Replace with real database call
+  // const user = await netlifyDB.query('SELECT * FROM users WHERE email = ?', [email]);
+  
+  // For now, check in-memory store
+  return global.userStore[email.toLowerCase()] || null;
+}
+
+async function saveUser(email, tokens, authCode = null) {
+  // TODO: Replace with real database call
+  // await netlifyDB.query('INSERT INTO users ... ON CONFLICT UPDATE ...', [email, tokens, authCode]);
+  
+  // For now, save to in-memory store
+  global.userStore[email.toLowerCase()] = {
+    email: email.toLowerCase(),
+    tokens: tokens,
+    auth_code: authCode,
     lastUpdated: Date.now()
   };
+  
+  console.log('SAVED USER TO STORE:', global.userStore[email.toLowerCase()]);
+  return global.userStore[email.toLowerCase()];
 }
 
 // Helper function to generate 8-digit random string
@@ -44,20 +58,6 @@ function decodeAuthCode(authCode) {
   }
 }
 
-// Helper function to find user by email
-function findUserByEmail(email) {
-  return global.userStore[email.toLowerCase()] || null;
-}
-
-// Helper function to create or update user
-function saveUser(email, tokens) {
-  global.userStore[email.toLowerCase()] = {
-    email: email,
-    tokens: tokens,
-    lastUpdated: Date.now()
-  };
-  return global.userStore[email.toLowerCase()];
-}
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
@@ -96,8 +96,8 @@ exports.handler = async function(event, context) {
     console.log('DEBUG: Purchase - Current userStore contents:', JSON.stringify(global.userStore, null, 2));
     console.log('DEBUG: Purchase - Looking up email:', email.toLowerCase());
     
-    // Check if user exists in our store
-    const existingUser = findUserByEmail(email);
+    // Check if user exists in database
+    const existingUser = await findUserByEmail(email);
     console.log('DEBUG: Purchase - Found existing user:', existingUser);
     
     // Determine if user is logged in (has currentTokens passed) vs existing user
@@ -122,10 +122,9 @@ exports.handler = async function(event, context) {
     
     console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
     
-    // Save/update user in store
-    const savedUser = saveUser(email, newTotalTokens);
+    // Save/update user in database
+    const savedUser = await saveUser(email, newTotalTokens, authCode);
     console.log('DEBUG: Purchase - Saved user:', savedUser);
-    console.log('DEBUG: Purchase - UserStore after save:', JSON.stringify(global.userStore, null, 2));
     
     // Store auth code with token data for login (simulates database)
     // In production, this would be stored in a real database
