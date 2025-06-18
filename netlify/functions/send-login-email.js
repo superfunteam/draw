@@ -64,8 +64,13 @@ exports.handler = async function(event, context) {
     // 3. If user doesn't exist, create new user with 1000 tokens
     // 4. Store auth code linked to user for login
     
+    // DEBUG: Log current state of user store
+    console.log('DEBUG: Current userStore contents:', JSON.stringify(global.userStore, null, 2));
+    console.log('DEBUG: Looking up email:', email.toLowerCase());
+    
     // Check if user exists in our store (shared with purchase-tokens)
     const existingUser = findUserByEmail(email);
+    console.log('DEBUG: Found existing user:', existingUser);
     
     let userTokens;
     let isNewUser;
@@ -79,8 +84,10 @@ exports.handler = async function(event, context) {
       // New user - create with 1000 welcome tokens
       isNewUser = true;
       userTokens = 1000;
-      saveUser(email, userTokens);
+      const savedUser = saveUser(email, userTokens);
       console.log(`Creating new user ${email} with ${userTokens} tokens`);
+      console.log('DEBUG: Saved user:', savedUser);
+      console.log('DEBUG: UserStore after save:', JSON.stringify(global.userStore, null, 2));
     }
     
     console.log(`Login request for ${email}, generated auth code: ${authCode}`);

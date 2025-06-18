@@ -67,8 +67,13 @@ exports.handler = async function(event, context) {
       };
     }
 
+    // DEBUG: Log current state of user store
+    console.log('DEBUG: Purchase - Current userStore contents:', JSON.stringify(global.userStore, null, 2));
+    console.log('DEBUG: Purchase - Looking up email:', email.toLowerCase());
+    
     // Check if user exists in our store
     const existingUser = findUserByEmail(email);
+    console.log('DEBUG: Purchase - Found existing user:', existingUser);
     
     // Determine if user is logged in (has currentTokens passed) vs existing user
     const isLoggedInUser = currentTokens !== undefined && currentTokens !== null;
@@ -93,7 +98,9 @@ exports.handler = async function(event, context) {
     console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
     
     // Save/update user in store
-    saveUser(email, newTotalTokens);
+    const savedUser = saveUser(email, newTotalTokens);
+    console.log('DEBUG: Purchase - Saved user:', savedUser);
+    console.log('DEBUG: Purchase - UserStore after save:', JSON.stringify(global.userStore, null, 2));
     
     // Store auth code with token data for login (simulates database)
     // In production, this would be stored in a real database
