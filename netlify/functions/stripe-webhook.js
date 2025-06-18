@@ -9,6 +9,9 @@ const mailjet = Mailjet.apiConnect(
 );
 
 exports.handler = async (event) => {
+    console.log('Webhook called, method:', event.httpMethod);
+    console.log('Headers:', JSON.stringify(event.headers));
+    
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
@@ -18,29 +21,42 @@ exports.handler = async (event) => {
     
     try {
         if (process.env.STRIPE_WEBHOOK_SECRET) {
+            console.log('Webhook secret exists, attempting signature verification');
             const sig = event.headers['stripe-signature'];
+            console.log('Stripe signature header:', sig ? 'present' : 'missing');
+            
             // For Netlify Functions, we need to handle the raw body
             const rawBody = event.isBase64Encoded 
                 ? Buffer.from(event.body, 'base64').toString('utf8')
                 : event.body;
+            
+            console.log('Body encoding:', event.isBase64Encoded ? 'base64' : 'raw');
+            console.log('Body length:', rawBody.length);
             
             stripeEvent = stripe.webhooks.constructEvent(
                 rawBody,
                 sig,
                 process.env.STRIPE_WEBHOOK_SECRET
             );
+            console.log('Webhook signature verified successfully');
         } else {
-            // For development/testing without webhook secret
+            console.log('No webhook secret, parsing body directly');
             stripeEvent = JSON.parse(event.body);
         }
     } catch (err) {
         console.error('Webhook signature verification failed:', err.message);
-        return { statusCode: 400, body: JSON.stringify({ error: 'Webhook verification failed' }) };
+        console.error('Full error:', err);
+        return { statusCode: 400, body: JSON.stringify({ error: 'Webhook verification failed', details: err.message }) };
     }
 
+    console.log('Event type:', stripeEvent.type);
+    console.log('Event ID:', stripeEvent.id);
+    
     // Handle the event
     if (stripeEvent.type === 'checkout.session.completed') {
         const session = stripeEvent.data.object;
+        console.log('Session ID:', session.id);
+        console.log('Session metadata:', JSON.stringify(session.metadata));
         
         try {
             // Extract metadata
