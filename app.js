@@ -696,7 +696,7 @@ function attachButtonListeners(drawGroup) {
                         promptPrefix = "Create a realistic 4k photo with a short range portrait lens that tells a story and uses bright colors for this prompt:";
                         break;
                     case "Sketches":
-                        promptPrefix = `Create ${numImages} prompts each that represents the same scene but with minor visual differences. Suggest new body poses for each character. Suggest new faces and motions. Each scene should have the same 'content' but have a different tweak. These will be used by a human artist to start sketching from. Use black and white only, with lines that show character shapes (balls at joints, circles in faces, motion drawing style). Here is the prompt:`;
+                        promptPrefix = "Create a figure drawing sketch that serves as a helpful drawing tool for artists. Use single color (black and white only) with clear lines that show character shapes, including balls at joints, circles in faces, and motion drawing style. Focus on the pose and movement described in the prompt. Here is the scene to draw:";
                         break;
                     case "None":
                         promptPrefix = "Create an image exactly in the style as prompted:";
@@ -1203,17 +1203,35 @@ document.querySelector('.actions .write').addEventListener('click', async () => 
     svgIcon.classList.add('animate-pulse');
     
     try {
-        // Call ChatGPT API for story generation
-        console.log('Making story generation API call...');
-        const response = await fetch('https://api.openai.com/v1/responses', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-4.1",
-                input: `Act as a coloring book artist. Develop a storyline that can be illustrated in a coloring book based on the given story of "${prompt}". The storyline should be split into ${numDrawings} chapters, each chapter describing a specific and unique scene, suitable for all ages. Keep each chapter to exactly 25 words or less.
+        // Check preset to determine story generation approach
+        const presetSelect = document.getElementById('preset');
+        const isSketchesPreset = presetSelect && presetSelect.value === 'Sketches';
+        
+        let storyPrompt;
+        if (isSketchesPreset) {
+            // For Sketches preset: create variations of the same scene
+            storyPrompt = `Create ${numDrawings} detailed visual prompts that all represent the same scene but with minor visual differences. Focus on character similarity with pose and motion differences. Use 3-4 full paragraphs for each prompt, stressing character consistency while varying poses, facial expressions, and body language.
+
+For the scene: "${prompt}"
+
+Each prompt should:
+- Maintain the same characters with identical visual descriptions (clothing, hair, physical features)
+- Suggest different body poses and motions for each character
+- Vary facial expressions and gestures
+- Keep the same setting and basic scenario
+- Use detailed, descriptive language suitable for artists
+
+Format each variation as follows:
+Variation 1:
+[3-4 detailed paragraphs describing the scene with specific character poses and motions]
+
+Variation 2:
+[3-4 detailed paragraphs describing the same scene with different character poses and motions]
+
+And so on. Focus on providing rich visual details that an artist can use as reference for sketching.`;
+        } else {
+            // Default coloring book story generation
+            storyPrompt = `Act as a coloring book artist. Develop a storyline that can be illustrated in a coloring book based on the given story of "${prompt}". The storyline should be split into ${numDrawings} chapters, each chapter describing a specific and unique scene, suitable for all ages. Keep each chapter to exactly 25 words or less.
                 
                 Instead of naming a charater, use a repeated visual descriptions to maintain consistency. Our prompts will be turned into images, so instead of the name "Bob", say, for example sake, "the teen boy with curly hair" in each chapter. If any visual descriptions are provided in the prompt, reuse them as much as possible. If there are no visual descriptions, make one up (but make sure to use it in each chapter)
 
@@ -1224,7 +1242,20 @@ Chapter 1:
 Chapter 2:
 [Two sentences or less, reusing characters by a matching visual descriptions]
 
-And so on. Do not use markdown formatting, asterisks, or any special characters. Keep the text clean and simple.`
+And so on. Do not use markdown formatting, asterisks, or any special characters. Keep the text clean and simple.`;
+        }
+        
+        // Call ChatGPT API for story generation
+        console.log('Making story generation API call...');
+        const response = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4.1",
+                input: storyPrompt
             })
         });
 
@@ -1254,8 +1285,9 @@ And so on. Do not use markdown formatting, asterisks, or any special characters.
             const storyText = data.output[0].content[0].text;
             console.log('Generated story:', storyText);
             
-            // Split the story into chapters
-            const chapters = storyText.split(/Chapter \d+:/).filter(chapter => chapter.trim());
+            // Split the story into chapters or variations based on preset
+            const splitPattern = isSketchesPreset ? /Variation \d+:/ : /Chapter \d+:/;
+            const chapters = storyText.split(splitPattern).filter(chapter => chapter.trim());
             
             // Update each draw group's textarea with its chapter
             const drawGroups = document.querySelectorAll('.draw-group');
