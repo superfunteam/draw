@@ -858,6 +858,34 @@
   </button>
 </div>
 
+<!-- Universal Modal System -->
+<div id="universal-modal" class="hidden fixed inset-0 z-[99]" aria-labelledby="universal-modal-title" role="dialog" aria-modal="true">
+  <!-- Backdrop -->
+  <div id="universal-modal-backdrop" class="fixed inset-0 bg-gray-500/75 transition-opacity duration-300 opacity-0" aria-hidden="true"></div>
+  
+  <!-- Modal Container -->
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <!-- Modal Panel -->
+      <div id="universal-modal-panel" class="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all duration-300 opacity-0 translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:p-6 pointer-events-auto">
+        
+        <!-- Close Button -->
+        <button type="button" id="universal-modal-close" class="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 cursor-pointer">
+          <span class="sr-only">Close</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
+            <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+          </svg>
+        </button>
+
+        <!-- Modal Content (dynamically populated) -->
+        <div id="universal-modal-content">
+          <!-- Content will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="modals.js"></script>
 <script src="app.js"></script>
 </body>

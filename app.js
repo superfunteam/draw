@@ -1891,4 +1891,468 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle login buttons in the new button pairs
     updateAuthUI();
-}); 
+    
+    // Initialize Universal Modal System
+    initializeUniversalModal();
+});
+
+// ============================================================================
+// UNIVERSAL MODAL SYSTEM
+// ============================================================================
+
+let currentModalType = null;
+
+// Modal content templates
+const modalTemplates = {
+    'login': {
+        maxWidth: 'sm:max-w-lg',
+        content: `
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-indigo-600">
+                        <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold text-gray-900">Login to Your Account</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">Enter your email and we'll send you a magic login link.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <div>
+                    <label for="universal-login-email" class="block text-sm font-medium text-gray-900">Email address</label>
+                    <div class="mt-2">
+                        <input type="email" id="universal-login-email" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+                    </div>
+                </div>
+            </div>
+
+            <div id="universal-login-success" class="hidden mt-5 text-center">
+                <p class="text-sm text-gray-600">Check your email for login instructions!</p>
+            </div>
+
+            <div id="universal-login-form" class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <button id="universal-login-send" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Send Login Link</button>
+                <button type="button" class="universal-modal-cancel mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+        `
+    },
+    
+    'tokens': {
+        maxWidth: 'sm:max-w-2xl',
+        content: `
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-amber-600">
+                        <path d="M21 6.375c0 2.692-4.03 4.875-9 4.875S3 9.067 3 6.375 7.03 1.5 12 1.5s9 2.183 9 4.875Z" />
+                        <path d="M12 12.75c2.685 0 5.19-.586 7.078-1.609a8.283 8.283 0 0 0 1.897-1.384c.016.121.025.244.025.368C21 12.817 16.97 15 12 15s-9-2.183-9-4.875c0-.124.009-.247.025-.368a8.285 8.285 0 0 0 1.897 1.384C6.809 12.164 9.315 12.75 12 12.75Z" />
+                        <path d="M12 16.5c2.685 0 5.19-.586 7.078-1.609a8.282 8.282 0 0 0 1.897-1.384c.016.121.025.244.025.368 0 2.692-4.03 4.875-9 4.875s-9-2.183-9-4.875c0-.124.009-.247.025-.368a8.284 8.284 0 0 0 1.897 1.384C6.809 15.914 9.315 16.5 12 16.5Z" />
+                        <path d="M12 20.25c2.685 0 5.19-.586 7.078-1.609a8.282 8.282 0 0 0 1.897-1.384c.016.121.025.244.025.368 0 2.692-4.03 4.875-9 4.875s-9-2.183-9-4.875c0-.124.009-.247.025-.368a8.284 8.284 0 0 0 1.897 1.384C6.809 19.664 9.315 20.25 12 20.25Z" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold text-gray-900">Buy Tokens</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">This is a silly app, but it uses a real API and costs me real money to run. You can buy <strong>TOKENS</strong> to gain access to this neato ability. Tweet <a href="https://x.com/clarklab" class="text-indigo-600 hover:text-indigo-900">@clarklab</a> if you'd like to chat.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label for="universal-user-email" class="block text-sm font-medium text-gray-900">Email address</label>
+                <div class="mt-2">
+                    <input type="email" id="universal-user-email" class="block w-full rounded-md border-0 py-1.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+                </div>
+            </div>
+
+            <fieldset aria-label="Pricing plans" class="mt-6 relative -space-y-px rounded-md bg-white">
+                <label class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                    <span class="flex items-center gap-3 text-sm">
+                        <input name="universal-pricing-plan" value="micro" type="radio" checked class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">Micro</span>
+                    </span>
+                    <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$10</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">(200k tokens)</span>
+                    </span>
+                </label>
+                <label class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                    <span class="flex items-center gap-3 text-sm">
+                        <input name="universal-pricing-plan" value="tinker" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">Tinker</span>
+                    </span>
+                    <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$15</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">(500k tokens)</span>
+                    </span>
+                </label>
+                <label class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                    <span class="flex items-center gap-3 text-sm">
+                        <input name="universal-pricing-plan" value="pro" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">Pro</span>
+                    </span>
+                    <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$20</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">(1M tokens)</span>
+                    </span>
+                </label>
+            </fieldset>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <button id="universal-purchase-btn" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Purchase</button>
+                <button type="button" class="universal-modal-cancel mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+        `
+    },
+    
+    'auth-code': {
+        maxWidth: 'sm:max-w-lg',
+        content: `
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-indigo-600">
+                        <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-6.5 6.499a3 3 0 0 0-.878 2.121v2.818c0 .414.336.75.75.75H6a.75.75 0 0 0 .75-.75v-1.5h1.5A.75.75 0 0 0 9 19.5V18h1.5a.75.75 0 0 0 .53-.22l2.658-2.658c.19-.189.517-.288.906-.22A6.75 6.75 0 1 0 15.75 1.5Zm0 3a.75.75 0 0 0 0 1.5A2.25 2.25 0 0 1 18 8.25a.75.75 0 0 0 1.5 0 3.75 3.75 0 0 0-3.75-3.75Z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold text-gray-900">Enter Login Code</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">Enter the 8-digit code from your email</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <div>
+                    <label for="universal-auth-code" class="block text-sm font-medium text-gray-900">Login Code</label>
+                    <div class="mt-2">
+                        <input type="text" id="universal-auth-code" maxlength="8" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 text-center font-mono text-lg tracking-widest" placeholder="12345678" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <button id="universal-auth-submit" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Login</button>
+                <button type="button" class="universal-modal-cancel mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+            </div>
+        `
+    },
+    
+    'success': {
+        maxWidth: 'sm:max-w-lg',
+        content: (title, message) => `
+            <div>
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-base font-semibold text-gray-900">${title}</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">${message}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6">
+                <button id="universal-success-ok" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Continue</button>
+            </div>
+        `
+    }
+};
+
+// Universal modal functions
+function showUniversalModal(type, options = {}) {
+    const modal = document.getElementById('universal-modal');
+    const backdrop = document.getElementById('universal-modal-backdrop');
+    const panel = document.getElementById('universal-modal-panel');
+    const content = document.getElementById('universal-modal-content');
+    
+    if (!modal || !modalTemplates[type]) {
+        console.error('Invalid modal type:', type);
+        return;
+    }
+    
+    currentModalType = type;
+    
+    // Set panel width
+    const template = modalTemplates[type];
+    panel.className = panel.className.replace(/sm:max-w-\w+/, template.maxWidth);
+    
+    // Set content
+    if (typeof template.content === 'function') {
+        content.innerHTML = template.content(options.title || '', options.message || '');
+    } else {
+        content.innerHTML = template.content;
+    }
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+        panel.classList.remove('opacity-0', 'translate-y-12', 'sm:scale-95');
+        panel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
+    });
+    
+    // Set up event handlers for this specific modal type
+    setupModalHandlers(type, options);
+}
+
+function hideUniversalModal() {
+    const modal = document.getElementById('universal-modal');
+    const backdrop = document.getElementById('universal-modal-backdrop');
+    const panel = document.getElementById('universal-modal-panel');
+    
+    // Animate out
+    backdrop.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0');
+    panel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
+    panel.classList.add('opacity-0', 'translate-y-12', 'sm:scale-95');
+    
+    // Hide after animation
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        currentModalType = null;
+    }, 300);
+}
+
+function setupModalHandlers(type, options) {
+    // Remove existing handlers
+    const oldHandlers = document.querySelectorAll('[data-universal-handler]');
+    oldHandlers.forEach(el => {
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+    });
+    
+    // Login modal handlers
+    if (type === 'login') {
+        const sendBtn = document.getElementById('universal-login-send');
+        const emailInput = document.getElementById('universal-login-email');
+        
+        if (sendBtn && emailInput) {
+            sendBtn.setAttribute('data-universal-handler', 'true');
+            sendBtn.addEventListener('click', async () => {
+                const email = emailInput.value.trim();
+                if (!email) return;
+                
+                try {
+                    const response = await fetch('/.netlify/functions/send-login-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Show success state
+                        const formSection = document.getElementById('universal-login-form');
+                        const successSection = document.getElementById('universal-login-success');
+                        const successMessage = successSection.querySelector('p');
+                        
+                        if (formSection) formSection.classList.add('hidden');
+                        if (emailInput.parentElement.parentElement) emailInput.parentElement.parentElement.classList.add('hidden');
+                        if (successMessage) successMessage.textContent = data.message;
+                        if (successSection) successSection.classList.remove('hidden');
+                    } else {
+                        alert(data.error || 'Failed to send login email');
+                    }
+                } catch (error) {
+                    console.error('Send login email error:', error);
+                    alert('Failed to send login email. Please try again.');
+                }
+            });
+        }
+    }
+    
+    // Tokens modal handlers
+    if (type === 'tokens') {
+        const purchaseBtn = document.getElementById('universal-purchase-btn');
+        
+        if (purchaseBtn) {
+            purchaseBtn.setAttribute('data-universal-handler', 'true');
+            purchaseBtn.addEventListener('click', async () => {
+                const email = document.getElementById('universal-user-email').value.trim();
+                const selectedPlan = document.querySelector('input[name="universal-pricing-plan"]:checked')?.value;
+                
+                if (!email || !selectedPlan) {
+                    alert('Please enter your email and select a plan');
+                    return;
+                }
+                
+                try {
+                    const requestBody = { email, plan: selectedPlan };
+                    if (currentUser && currentUser.tokens !== undefined) {
+                        requestBody.currentTokens = currentUser.tokens;
+                    }
+
+                    const response = await fetch('/.netlify/functions/purchase-tokens', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Update logged-in user tokens immediately
+                        if (data.isLoggedInUser && currentUser) {
+                            currentUser.tokens = data.newTotalTokens;
+                            saveAuthState(currentUser);
+                            setTimeout(() => refreshTokensFromDB(), 1000);
+                        }
+                        
+                        hideUniversalModal();
+                        showUniversalModal('success', {
+                            title: 'Purchase Successful!',
+                            message: data.message
+                        });
+                    } else {
+                        alert(data.error || 'Purchase failed');
+                    }
+                } catch (error) {
+                    console.error('Purchase error:', error);
+                    alert('Purchase failed. Please try again.');
+                }
+            });
+        }
+    }
+    
+    // Auth code modal handlers
+    if (type === 'auth-code') {
+        const submitBtn = document.getElementById('universal-auth-submit');
+        const codeInput = document.getElementById('universal-auth-code');
+        
+        if (submitBtn && codeInput) {
+            submitBtn.setAttribute('data-universal-handler', 'true');
+            submitBtn.addEventListener('click', async () => {
+                const authCode = codeInput.value.trim();
+                if (!authCode || authCode.length !== 8) {
+                    alert('Please enter a valid 8-digit code');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/.netlify/functions/auth-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ authCode })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        saveAuthState(data.user);
+                        
+                        // Refresh token balance from database
+                        if (data.user.email && !data.user.email.includes('example.com')) {
+                            setTimeout(() => refreshTokensFromDB(), 1000);
+                            setTimeout(() => startTokenValidation(), 2000);
+                        }
+                        
+                        hideUniversalModal();
+                        showUniversalModal('success', {
+                            title: 'Welcome!',
+                            message: `You now have ${formatTokenCount(data.user.tokens)} tokens available.`
+                        });
+                    } else {
+                        alert(data.error || 'Invalid or expired login code');
+                    }
+                } catch (error) {
+                    console.error('Auth login error:', error);
+                    alert('Login failed. Please try again.');
+                }
+            });
+        }
+    }
+    
+    // Success modal handlers
+    if (type === 'success') {
+        const okBtn = document.getElementById('universal-success-ok');
+        if (okBtn) {
+            okBtn.setAttribute('data-universal-handler', 'true');
+            okBtn.addEventListener('click', () => {
+                hideUniversalModal();
+                if (options.onContinue) options.onContinue();
+            });
+        }
+    }
+}
+
+function initializeUniversalModal() {
+    const modal = document.getElementById('universal-modal');
+    const backdrop = document.getElementById('universal-modal-backdrop');
+    const closeBtn = document.getElementById('universal-modal-close');
+    
+    // Close button
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideUniversalModal);
+    }
+    
+    // Backdrop click to close
+    if (backdrop) {
+        backdrop.addEventListener('click', hideUniversalModal);
+    }
+    
+    // Cancel button handler (delegated)
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target.classList.contains('universal-modal-cancel')) {
+                hideUniversalModal();
+            }
+        });
+    }
+    
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && currentModalType) {
+            hideUniversalModal();
+        }
+    });
+}
+
+// Replace old modal functions
+function showModal(modalType) {
+    // Map old modal names to new system
+    const modalMap = {
+        'login-modal': 'login',
+        'tokens-modal': 'tokens',
+        'auth-code-modal': 'auth-code'
+    };
+    
+    const newType = modalMap[modalType] || modalType;
+    showUniversalModal(newType);
+}
+
+function hideModal(modalId) {
+    hideUniversalModal();
+}
+
+function showWelcomeModal(tokens) {
+    showUniversalModal('success', {
+        title: 'Welcome!',
+        message: `You now have ${formatTokenCount(tokens)} tokens available.`
+    });
+}
+
+function showPurchaseSuccessModal(message) {
+    showUniversalModal('success', {
+        title: 'Purchase Successful!',
+        message: message
+    });
+}
+
+function showAuthCodeModal() {
+    showUniversalModal('auth-code');
+    // Focus the input after modal is shown
+    setTimeout(() => {
+        const input = document.getElementById('universal-auth-code');
+        if (input) input.focus();
+    }, 300);
+} 
