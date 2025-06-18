@@ -1620,28 +1620,43 @@ function showPurchaseSuccessModal(message) {
 function showLoginSuccessState(message) {
     const formSection = document.getElementById('login-form-section');
     const successMessage = document.getElementById('login-success-message');
-    const successSection = document.getElementById('login-success-section');
+    const emailInput = document.getElementById('login-email');
     
     // Update the success message text with the custom message
     if (successMessage && message) {
-        successMessage.textContent = message;
+        // Find the <p> element inside and update its text
+        const messageP = successMessage.querySelector('p');
+        if (messageP) {
+            messageP.textContent = message;
+        }
     }
     
+    // Hide form section (email input and buttons)
     if (formSection) formSection.classList.add('hidden');
+    if (emailInput && emailInput.parentElement && emailInput.parentElement.parentElement) {
+        emailInput.parentElement.parentElement.classList.add('hidden');
+    }
+    
+    // Show success message
     if (successMessage) successMessage.classList.remove('hidden');
-    if (successSection) successSection.classList.remove('hidden');
 }
 
 // Reset login modal to initial state
 function resetLoginModal() {
     const formSection = document.getElementById('login-form-section');
     const successMessage = document.getElementById('login-success-message');
-    const successSection = document.getElementById('login-success-section');
     const emailInput = document.getElementById('login-email');
     
+    // Show form elements
     if (formSection) formSection.classList.remove('hidden');
+    if (emailInput && emailInput.parentElement && emailInput.parentElement.parentElement) {
+        emailInput.parentElement.parentElement.classList.remove('hidden');
+    }
+    
+    // Hide success message
     if (successMessage) successMessage.classList.add('hidden');
-    if (successSection) successSection.classList.add('hidden');
+    
+    // Clear email input
     if (emailInput) emailInput.value = '';
 }
 
