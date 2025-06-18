@@ -35,7 +35,6 @@
     --color-white: #fff;
     --spacing: 0.25rem;
     --container-xs: 20rem;
-    --container-md: 28rem;
     --container-lg: 32rem;
     --container-2xl: 42rem;
     --text-xs: 0.75rem;
@@ -794,6 +793,9 @@
   }
   .border-indigo-200 {
     border-color: var(--color-indigo-200);
+  }
+  .border-indigo-600 {
+    border-color: var(--color-indigo-600);
   }
   .border-white {
     border-color: var(--color-white);
