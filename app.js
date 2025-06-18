@@ -1930,11 +1930,7 @@ const modalTemplates = {
                 </div>
             </div>
 
-            <div id="universal-login-success" class="hidden mt-5 text-center">
-                <p class="text-sm text-gray-600">Check your email for login instructions!</p>
-            </div>
-
-            <div id="universal-login-form" class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                 <button id="universal-login-send" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Send Login Link</button>
                 <button type="button" class="universal-modal-cancel mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
             </div>
@@ -2190,15 +2186,14 @@ function setupModalHandlers(type, options) {
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Show success state
-                        const formSection = document.getElementById('universal-login-form');
-                        const successSection = document.getElementById('universal-login-success');
-                        const successMessage = successSection.querySelector('p');
-                        
-                        if (formSection) formSection.classList.add('hidden');
-                        if (emailInput.parentElement.parentElement) emailInput.parentElement.parentElement.classList.add('hidden');
-                        if (successMessage) successMessage.textContent = data.message;
-                        if (successSection) successSection.classList.remove('hidden');
+                        // Close current modal and show success modal
+                        hideUniversalModal();
+                        setTimeout(() => {
+                            showUniversalModal('success', {
+                                title: data.isNewUser ? 'Welcome!' : 'Welcome back!',
+                                message: data.message
+                            });
+                        }, 300);
                     } else {
                         alert(data.error || 'Failed to send login email');
                     }
