@@ -2392,40 +2392,32 @@ function setupModalHandlers(type, options) {
                 }
                 
                 try {
-                    const requestBody = { email, plan: selectedPlan };
-                    if (currentUser && currentUser.tokens !== undefined) {
-                        requestBody.currentTokens = currentUser.tokens;
-                    }
-
-                    const response = await fetch('/.netlify/functions/purchase-tokens', {
+                    // Show loading state
+                    purchaseBtn.disabled = true;
+                    purchaseBtn.textContent = 'Processing...';
+                    
+                    // Create Stripe checkout session
+                    const response = await fetch('/.netlify/functions/create-checkout-session', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestBody)
+                        body: JSON.stringify({ email, plan: selectedPlan })
                     });
                     
                     const data = await response.json();
                     
-                    if (response.ok && data.success) {
-                        // Update logged-in user tokens immediately
-                        if (data.isLoggedInUser && currentUser) {
-                            currentUser.tokens = data.newTotalTokens;
-                            saveAuthState(currentUser);
-                            setTimeout(() => refreshTokensFromDB(), 1000);
-                        }
-                        
-                        hideUniversalModal();
-                        setTimeout(() => {
-                            showUniversalModal('success', {
-                                title: 'Purchase Successful!',
-                                message: data.message
-                            });
-                        }, 400);
+                    if (response.ok && data.success && data.url) {
+                        // Redirect to Stripe Checkout
+                        window.location.href = data.url;
                     } else {
-                        alert(data.error || 'Purchase failed');
+                        alert(data.error || 'Failed to start checkout process');
+                        purchaseBtn.disabled = false;
+                        purchaseBtn.textContent = 'BUY TOKENS';
                     }
                 } catch (error) {
-                    console.error('Purchase error:', error);
-                    alert('Purchase failed. Please try again.');
+                    console.error('Checkout error:', error);
+                    alert('Failed to start checkout. Please try again.');
+                    purchaseBtn.disabled = false;
+                    purchaseBtn.textContent = 'BUY TOKENS';
                 }
             });
         }
@@ -2645,4 +2637,56 @@ function updatePdfBannerVisibility() {
             fabAddDrawGroup.classList.add('bottom-6', 'lg:bottom-8');
         }
     }
-} 
+}
+
+// Handle Stripe payment returns
+async function handlePaymentReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const canceled = urlParams.has('canceled');
+    
+    if (sessionId) {
+        // Payment success - show success modal
+        showUniversalModal('success', {
+            title: 'Payment Processing',
+            message: 'Your payment is being processed. Your tokens will be added shortly.'
+        });
+        
+        // Refresh tokens after a delay
+        setTimeout(async () => {
+            if (currentUser && currentUser.email) {
+                await refreshTokensFromDB();
+            }
+        }, 3000);
+        
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (canceled) {
+        // Payment canceled
+        alert('Payment was canceled. No charges were made.');
+        
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load auth state
+    loadAuthState();
+    
+    // Initialize universal modal
+    initializeUniversalModal();
+    
+    // Handle payment returns
+    handlePaymentReturn();
+    
+    // Update PDF banner visibility
+    updatePdfBannerVisibility();
+    
+    // Add preset change listener
+    const presetSelect = document.getElementById('preset');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', updatePdfBannerVisibility);
+    }
+}); 

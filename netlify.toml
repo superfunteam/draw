@@ -10,4 +10,11 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
+
+# Stripe webhook needs raw body for signature verification
+[[functions]]
+  path = "/.netlify/functions/stripe-webhook"
+  [functions.settings]
+    type = "synchronous"
+    raw_body = true 
