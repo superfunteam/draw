@@ -1210,23 +1210,30 @@ document.querySelector('.actions .write').addEventListener('click', async () => 
         let storyPrompt;
         if (isSketchesPreset) {
             // For Sketches preset: create variations of the same scene
-            storyPrompt = `Create ${numDrawings} detailed visual prompts that all represent the same scene but with minor visual differences. Focus on character similarity with pose and motion differences. Use 3-4 full paragraphs for each prompt, stressing character consistency while varying poses, facial expressions, and body language.
+            storyPrompt = `Create ${numDrawings} detailed visual prompts that all represent the same scene but with minor visual differences. Each prompt must be completely standalone and self-contained. Do not reference other variations or use phrases like "in the same scene" or "similar to the previous".
 
 For the scene: "${prompt}"
 
 IMPORTANT: Do not include any introductory text, explanations, or preamble. Start directly with the first variation.
 
+Each variation should:
+- Be a complete, standalone description that can be read independently
+- Maintain identical character descriptions (use full physical descriptions each time)
+- Include the complete setting and scenario description in each prompt
+- Vary the poses, motions, facial expressions, and gestures
+- Use 3-4 full paragraphs with rich visual details for artists
+
 Format each variation EXACTLY as follows:
 VARIATION 1:
-[3-4 detailed paragraphs describing the scene with specific character poses and motions]
+[Complete standalone description of the full scene, characters, setting, and specific poses/motions - 3-4 paragraphs]
 
 VARIATION 2:
-[3-4 detailed paragraphs describing the same scene with different character poses and motions]
+[Complete standalone description of the full scene, characters, setting, and different poses/motions - 3-4 paragraphs]
 
 VARIATION 3:
-[3-4 detailed paragraphs describing the same scene with different character poses and motions]
+[Complete standalone description of the full scene, characters, setting, and different poses/motions - 3-4 paragraphs]
 
-Continue this exact pattern. Each variation should maintain the same characters with identical visual descriptions (clothing, hair, physical features) but suggest different body poses, motions, facial expressions, and gestures. Keep the same setting and basic scenario. Focus on providing rich visual details that an artist can use as reference for sketching.`;
+Continue this exact pattern. Each variation must include all details needed to understand the complete scene without reading any other variation.`;
         } else {
             // Default coloring book story generation
             storyPrompt = `Act as a coloring book artist. Develop a storyline that can be illustrated in a coloring book based on the given story of "${prompt}". The storyline should be split into ${numDrawings} chapters, each chapter describing a specific and unique scene, suitable for all ages. Keep each chapter to exactly 25 words or less.
