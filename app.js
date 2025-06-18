@@ -2414,10 +2414,12 @@ function setupModalHandlers(type, options) {
                         }
                         
                         hideUniversalModal();
-                        showUniversalModal('success', {
-                            title: 'Purchase Successful!',
-                            message: data.message
-                        });
+                        setTimeout(() => {
+                            showUniversalModal('success', {
+                                title: 'Purchase Successful!',
+                                message: data.message
+                            });
+                        }, 400);
                     } else {
                         alert(data.error || 'Purchase failed');
                     }
@@ -2497,12 +2499,20 @@ function initializeUniversalModal() {
     
     // Close button
     if (closeBtn) {
-        closeBtn.addEventListener('click', hideUniversalModal);
+        closeBtn.addEventListener('click', () => {
+            if (currentModalType !== 'success') {
+                hideUniversalModal();
+            }
+        });
     }
     
-    // Backdrop click to close
+    // Backdrop click to close (except for success modal)
     if (backdrop) {
-        backdrop.addEventListener('click', hideUniversalModal);
+        backdrop.addEventListener('click', () => {
+            if (currentModalType !== 'success') {
+                hideUniversalModal();
+            }
+        });
     }
     
     // Cancel button handler (delegated)
@@ -2514,9 +2524,9 @@ function initializeUniversalModal() {
         });
     }
     
-    // Escape key to close
+    // Escape key to close (except for success modal)
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && currentModalType) {
+        if (e.key === 'Escape' && currentModalType && currentModalType !== 'success') {
             hideUniversalModal();
         }
     });
