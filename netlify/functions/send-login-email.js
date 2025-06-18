@@ -7,6 +7,16 @@ function generateAuthCode() {
   return Math.random().toString(36).substring(2, 10).padEnd(8, '0').substring(0, 8);
 }
 
+// Helper function to encode token data in auth code (shared with purchase-tokens)
+function generateAuthCodeWithTokens(email, tokens) {
+  // Create a simple encoded string: first 4 chars random + encoded token amount
+  const randomPrefix = Math.random().toString(36).substring(2, 6);
+  // Scale down tokens to fit in 4 chars (divide by 1000, so 1M becomes 1000)
+  const scaledTokens = Math.floor(tokens / 1000);
+  const tokenPart = scaledTokens.toString(36).padStart(4, '0').slice(-4);
+  return randomPrefix + tokenPart;
+}
+
 // Helper function to find user by email
 function findUserByEmail(email) {
   return global.userStore[email.toLowerCase()] || null;
@@ -54,9 +64,6 @@ exports.handler = async function(event, context) {
       process.env.MAILJET_SECRET_KEY
     );
 
-    // Generate auth code
-    const authCode = generateAuthCode();
-    
     // TODO: Database integration will be set up after deployment
     // When database is ready, this should:
     // 1. Check if user exists by email
@@ -90,6 +97,8 @@ exports.handler = async function(event, context) {
       console.log('DEBUG: UserStore after save:', JSON.stringify(global.userStore, null, 2));
     }
     
+    // Generate auth code with embedded token data (solves serverless persistence issue)
+    const authCode = generateAuthCodeWithTokens(email, userTokens);
     console.log(`Login request for ${email}, generated auth code: ${authCode}`);
 
     const siteUrl = process.env.URL || 'https://draw.superfun.games';

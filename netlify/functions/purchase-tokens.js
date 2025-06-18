@@ -19,6 +19,31 @@ function generateAuthCode() {
   return Math.random().toString(36).substring(2, 10).padEnd(8, '0').substring(0, 8);
 }
 
+// Helper function to encode token data in auth code
+function generateAuthCodeWithTokens(email, tokens) {
+  // Create a simple encoded string: first 4 chars random + encoded token amount
+  const randomPrefix = Math.random().toString(36).substring(2, 6);
+  // Scale down tokens to fit in 4 chars (divide by 1000, so 1M becomes 1000)
+  const scaledTokens = Math.floor(tokens / 1000);
+  const tokenPart = scaledTokens.toString(36).padStart(4, '0').slice(-4);
+  return randomPrefix + tokenPart;
+}
+
+// Helper function to decode token data from auth code
+function decodeAuthCode(authCode) {
+  if (authCode.length !== 8) return null;
+  try {
+    // Last 4 chars contain the scaled token amount in base36
+    const tokenPart = authCode.substring(4);
+    const scaledTokens = parseInt(tokenPart, 36);
+    // Scale back up (multiply by 1000)
+    const tokens = scaledTokens * 1000;
+    return tokens > 0 ? tokens : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // Helper function to find user by email
 function findUserByEmail(email) {
   return global.userStore[email.toLowerCase()] || null;
@@ -92,8 +117,8 @@ exports.handler = async function(event, context) {
     
     const newTotalTokens = previousTokens + tokens;
     
-    // Generate auth code (only needed for new users or logged-out purchases)
-    const authCode = generateAuthCode();
+    // Generate auth code with embedded token data (solves serverless persistence issue)
+    const authCode = generateAuthCodeWithTokens(email, newTotalTokens);
     
     console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
     

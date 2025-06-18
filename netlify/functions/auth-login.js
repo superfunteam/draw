@@ -5,6 +5,21 @@
 global.authCodeStore = global.authCodeStore || {};
 global.userStore = global.userStore || {};
 
+// Helper function to decode token data from auth code (shared with other functions)
+function decodeAuthCode(authCode) {
+  if (authCode.length !== 8) return null;
+  try {
+    // Last 4 chars contain the scaled token amount in base36
+    const tokenPart = authCode.substring(4);
+    const scaledTokens = parseInt(tokenPart, 36);
+    // Scale back up (multiply by 1000)
+    const tokens = scaledTokens * 1000;
+    return tokens > 0 ? tokens : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return {
@@ -34,37 +49,54 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // Check if auth code exists in our store (simulates database lookup)
-    const storedData = global.authCodeStore[authCode];
+    // Try to decode token data from auth code (new method)
+    const decodedTokens = decodeAuthCode(authCode);
+    console.log('DEBUG: Auth-login - Decoded tokens from auth code:', decodedTokens);
     
     let user;
-    if (storedData) {
-      // Use actual purchased data
+    if (decodedTokens) {
+      // Use decoded token data from auth code
       user = {
-        email: storedData.email,
-        tokens: storedData.tokens
+        email: 'user@example.com', // Default email for decoded codes
+        tokens: decodedTokens
       };
-      console.log(`Found stored data for auth code: ${authCode}, tokens: ${storedData.tokens}`);
-      
-      // Remove used auth code (one-time use)
-      delete global.authCodeStore[authCode];
+      console.log(`Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
     } else {
-      // Fallback for testing - simulate different token amounts based on auth code pattern
-      let tokens = 200000; // Default micro plan
+      // Fallback: Check if auth code exists in our store (legacy method)
+      console.log('DEBUG: Auth-login - Current authCodeStore contents:', JSON.stringify(global.authCodeStore, null, 2));
+      console.log('DEBUG: Auth-login - Looking for auth code:', authCode);
       
-      if (authCode.startsWith('1')) {
-        tokens = 200000; // Micro
-      } else if (authCode.startsWith('2')) {
-        tokens = 500000; // Tinker  
-      } else if (authCode.startsWith('3')) {
-        tokens = 1000000; // Pro
+      const storedData = global.authCodeStore[authCode];
+      console.log('DEBUG: Auth-login - Found stored data:', storedData);
+      
+      if (storedData) {
+        // Use actual purchased data
+        user = {
+          email: storedData.email,
+          tokens: storedData.tokens
+        };
+        console.log(`Found stored data for auth code: ${authCode}, tokens: ${storedData.tokens}`);
+        
+        // Remove used auth code (one-time use)
+        delete global.authCodeStore[authCode];
+      } else {
+        // Final fallback for testing - simulate different token amounts based on auth code pattern
+        let tokens = 200000; // Default micro plan
+        
+        if (authCode.startsWith('1')) {
+          tokens = 200000; // Micro
+        } else if (authCode.startsWith('2')) {
+          tokens = 500000; // Tinker  
+        } else if (authCode.startsWith('3')) {
+          tokens = 1000000; // Pro
+        }
+        
+        user = {
+          email: 'test@example.com',
+          tokens: tokens
+        };
+        console.log(`Using final fallback data for auth code: ${authCode}, tokens: ${tokens}`);
       }
-      
-      user = {
-        email: 'test@example.com',
-        tokens: tokens
-      };
-      console.log(`Using fallback data for auth code: ${authCode}, tokens: ${tokens}`);
     }
 
     return {
