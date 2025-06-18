@@ -25,9 +25,9 @@ exports.handler = async function(event, context) {
 
     // Map pricing plans to token amounts
     const tokenAmounts = {
-      'micro': 500,
-      'tinker': 1500,
-      'pro': 10000
+      'micro': 200000,
+      'tinker': 500000,
+      'pro': 1000000
     };
 
     const tokens = tokenAmounts[plan];

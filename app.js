@@ -30,17 +30,38 @@ function clearAuthState() {
 
 // Update UI based on auth state
 function updateAuthUI() {
-    const tokenButtons = document.querySelectorAll('.tokens');
+    const tokenContainers = document.querySelectorAll('.tokens');
     
-    tokenButtons.forEach(button => {
+    tokenContainers.forEach(container => {
+        const buyBtn = container.querySelector('.token-buy-btn');
+        const authBtn = container.querySelector('.token-auth-btn');
+        
         if (currentUser && currentUser.tokens !== undefined) {
-            // Show token count and update text
-            const tokenCount = currentUser.tokens;
-            button.innerHTML = button.innerHTML.replace(/Buy Tokens|Tokens/g, `Buy (${tokenCount})`);
+            // User is logged in - show token count in auth button
+            const tokenCount = currentUser.tokens.toLocaleString();
+            authBtn.textContent = tokenCount;
+            authBtn.onclick = () => {
+                alert(`You have ${tokenCount} tokens remaining.`);
+            };
         } else {
-            // Reset to original text
-            button.innerHTML = button.innerHTML.replace(/Buy \(\d+\)/g, 'Buy Tokens');
+            // User not logged in - show login button
+            authBtn.textContent = 'Login';
+            authBtn.onclick = () => {
+                // Prompt for auth code
+                const authCode = prompt('Enter your 8-digit login code:');
+                if (authCode && authCode.length === 8) {
+                    loginWithAuthCode(authCode);
+                }
+            };
         }
+        
+        // Buy button always opens the tokens modal
+        buyBtn.onclick = () => {
+            const modal = document.getElementById('tokens-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        };
     });
 }
 
@@ -127,9 +148,9 @@ async function deductTokens(tokensUsed) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            // Update local state
+            // Update local state and UI
             currentUser.tokens = data.newBalance;
-            saveAuthState(currentUser);
+            saveAuthState(currentUser); // This calls updateAuthUI() already
             
             console.log(`Deducted ${tokensUsed} tokens. New balance: ${data.newBalance}`);
             return true;
