@@ -1214,21 +1214,19 @@ document.querySelector('.actions .write').addEventListener('click', async () => 
 
 For the scene: "${prompt}"
 
-Each prompt should:
-- Maintain the same characters with identical visual descriptions (clothing, hair, physical features)
-- Suggest different body poses and motions for each character
-- Vary facial expressions and gestures
-- Keep the same setting and basic scenario
-- Use detailed, descriptive language suitable for artists
+IMPORTANT: Do not include any introductory text, explanations, or preamble. Start directly with the first variation.
 
-Format each variation as follows:
-Variation 1:
+Format each variation EXACTLY as follows:
+VARIATION 1:
 [3-4 detailed paragraphs describing the scene with specific character poses and motions]
 
-Variation 2:
+VARIATION 2:
 [3-4 detailed paragraphs describing the same scene with different character poses and motions]
 
-And so on. Focus on providing rich visual details that an artist can use as reference for sketching.`;
+VARIATION 3:
+[3-4 detailed paragraphs describing the same scene with different character poses and motions]
+
+Continue this exact pattern. Each variation should maintain the same characters with identical visual descriptions (clothing, hair, physical features) but suggest different body poses, motions, facial expressions, and gestures. Keep the same setting and basic scenario. Focus on providing rich visual details that an artist can use as reference for sketching.`;
         } else {
             // Default coloring book story generation
             storyPrompt = `Act as a coloring book artist. Develop a storyline that can be illustrated in a coloring book based on the given story of "${prompt}". The storyline should be split into ${numDrawings} chapters, each chapter describing a specific and unique scene, suitable for all ages. Keep each chapter to exactly 25 words or less.
@@ -1286,8 +1284,16 @@ And so on. Do not use markdown formatting, asterisks, or any special characters.
             console.log('Generated story:', storyText);
             
             // Split the story into chapters or variations based on preset
-            const splitPattern = isSketchesPreset ? /Variation \d+:/ : /Chapter \d+:/;
-            const chapters = storyText.split(splitPattern).filter(chapter => chapter.trim());
+            const splitPattern = isSketchesPreset ? /VARIATION \d+:/i : /Chapter \d+:/;
+            let chapters = storyText.split(splitPattern).filter(chapter => chapter.trim());
+            
+            // For sketches preset, if the first chunk looks like intro text, remove it
+            if (isSketchesPreset && chapters.length > 0) {
+                const firstChunk = chapters[0].toLowerCase();
+                if (firstChunk.includes('certainly') || firstChunk.includes('below are') || firstChunk.includes('here are') || firstChunk.length < 100) {
+                    chapters = chapters.slice(1); // Remove the intro chunk
+                }
+            }
             
             // Update each draw group's textarea with its chapter
             const drawGroups = document.querySelectorAll('.draw-group');
