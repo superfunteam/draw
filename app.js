@@ -2646,21 +2646,31 @@ async function handlePaymentReturn() {
     const canceled = urlParams.has('canceled');
     
     if (sessionId) {
-        // Payment success - show success modal
-        showUniversalModal('success', {
-            title: 'Payment Processing',
-            message: 'Your payment is being processed. Your tokens will be added shortly.'
-        });
+        console.log('Payment success detected, session:', sessionId);
         
-        // Refresh tokens after a delay
-        setTimeout(async () => {
-            if (currentUser && currentUser.email) {
-                await refreshTokensFromDB();
-            }
-        }, 3000);
-        
-        // Clean up URL
+        // Clean up URL first
         window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show success modal after a small delay to ensure everything is loaded
+        setTimeout(() => {
+            showUniversalModal('success', {
+                title: 'Payment Successful!',
+                message: 'Your payment has been processed. Your tokens are being added to your account. Please check your email for confirmation.'
+            });
+            
+            // Try to refresh tokens after another delay
+            setTimeout(async () => {
+                if (currentUser && currentUser.email) {
+                    const refreshed = await refreshTokensFromDB();
+                    if (refreshed) {
+                        console.log('Tokens refreshed successfully');
+                    }
+                } else {
+                    console.log('User not logged in - tokens will be available when you log in with the email used for purchase');
+                }
+            }, 3000);
+        }, 500);
+        
     } else if (canceled) {
         // Payment canceled
         alert('Payment was canceled. No charges were made.');
