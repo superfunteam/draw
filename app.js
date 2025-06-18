@@ -1905,7 +1905,7 @@ let currentModalType = null;
 // Modal content templates
 const modalTemplates = {
     'login': {
-        maxWidth: 'sm:max-w-lg',
+        maxWidth: 'sm:max-w-2xl',
         content: `
             <div>
                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
@@ -2051,7 +2051,7 @@ const modalTemplates = {
     },
     
     'auth-code': {
-        maxWidth: 'sm:max-w-lg',
+        maxWidth: 'sm:max-w-2xl',
         content: `
             <div>
                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
@@ -2084,7 +2084,7 @@ const modalTemplates = {
     },
     
     'success': {
-        maxWidth: 'sm:max-w-lg',
+        maxWidth: 'sm:max-w-2xl',
         content: (title, message) => `
             <div>
                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -2120,11 +2120,8 @@ function showUniversalModal(type, options = {}) {
     
     currentModalType = type;
     
-    // Set panel width
-    const template = modalTemplates[type];
-    panel.className = panel.className.replace(/sm:max-w-[\w-]+/, template.maxWidth);
-    
     // Set content
+    const template = modalTemplates[type];
     if (typeof template.content === 'function') {
         content.innerHTML = template.content(options.title || '', options.message || '');
     } else {
