@@ -68,13 +68,9 @@ function checkUrlAuth() {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
         
-        // Auto-fill auth code modal and show it
+        // Auto-login directly without showing auth code modal
         setTimeout(() => {
-            const authCodeInput = document.getElementById('auth-code-input');
-            if (authCodeInput) {
-                authCodeInput.value = authCode;
-                showAuthCodeModal();
-            }
+            loginWithAuthCode(authCode);
         }, 500); // Small delay to ensure DOM is ready
     }
 }
@@ -93,10 +89,17 @@ async function loginWithAuthCode(authCode) {
         if (response.ok && data.success) {
             saveAuthState(data.user);
             
-            // Show success message
-            alert(`Welcome back! You have ${data.user.tokens} tokens available.`);
+            // Show welcome modal instead of alert
+            showWelcomeModal(data.user.tokens);
         } else {
-            alert(data.error || 'Invalid or expired login code');
+            // Show error in auth code modal if it's open, otherwise alert for now
+            const authModal = document.getElementById('auth-code-modal');
+            if (authModal && !authModal.classList.contains('hidden')) {
+                // TODO: Add error display in auth code modal
+                alert(data.error || 'Invalid or expired login code');
+            } else {
+                alert(data.error || 'Invalid or expired login code');
+            }
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -1332,13 +1335,14 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Initialize the Tokens Modal using the new system
-if (typeof initializeModal === 'function') {
-    const tokensModalInstance = initializeModal('tokens-modal', '.tokens');
-    // The initializeModal function in modals.js now handles adding to a global list for Escape key handling.
-} else {
-    console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
-}
+// Initialize the Tokens Modal using the new system - DISABLED to prevent conflicts
+// We now handle modal opening with the new button system
+// if (typeof initializeModal === 'function') {
+//     const tokensModalInstance = initializeModal('tokens-modal', '.tokens');
+//     // The initializeModal function in modals.js now handles adding to a global list for Escape key handling.
+// } else {
+//     console.error('initializeModal function not found. Ensure modals.js is loaded correctly.');
+// }
 
 
 // Token purchase logic
@@ -1570,8 +1574,8 @@ async function sendLoginEmail(email) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            hideModal('login-modal');
-            alert(data.message);
+            // Show success state in login modal
+            showLoginSuccessState();
         } else {
             alert(data.error || 'Failed to send login email');
         }
@@ -1579,6 +1583,39 @@ async function sendLoginEmail(email) {
         console.error('Send login email error:', error);
         alert('Failed to send login email. Please try again.');
     }
+}
+
+// Show welcome modal with token count
+function showWelcomeModal(tokens) {
+    const welcomeMessage = document.getElementById('welcome-modal-message');
+    if (welcomeMessage) {
+        welcomeMessage.textContent = `You have ${tokens.toLocaleString()} tokens available.`;
+    }
+    showModal('welcome-modal');
+}
+
+// Show success state in login modal
+function showLoginSuccessState() {
+    const formSection = document.getElementById('login-form-section');
+    const successMessage = document.getElementById('login-success-message');
+    const successSection = document.getElementById('login-success-section');
+    
+    if (formSection) formSection.classList.add('hidden');
+    if (successMessage) successMessage.classList.remove('hidden');
+    if (successSection) successSection.classList.remove('hidden');
+}
+
+// Reset login modal to initial state
+function resetLoginModal() {
+    const formSection = document.getElementById('login-form-section');
+    const successMessage = document.getElementById('login-success-message');
+    const successSection = document.getElementById('login-success-section');
+    const emailInput = document.getElementById('login-email');
+    
+    if (formSection) formSection.classList.remove('hidden');
+    if (successMessage) successMessage.classList.add('hidden');
+    if (successSection) successSection.classList.add('hidden');
+    if (emailInput) emailInput.value = '';
 }
 
 // Initialize modal event listeners
@@ -1601,7 +1638,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (loginCancelBtn) {
-        loginCancelBtn.addEventListener('click', () => hideModal('login-modal'));
+        loginCancelBtn.addEventListener('click', () => {
+            hideModal('login-modal');
+            setTimeout(() => resetLoginModal(), 300);
+        });
+    }
+    
+    // Login modal done button (for success state)
+    const loginDoneBtn = document.getElementById('login-modal-done-button');
+    if (loginDoneBtn) {
+        loginDoneBtn.addEventListener('click', () => {
+            hideModal('login-modal');
+            setTimeout(() => resetLoginModal(), 300);
+        });
     }
     
     // Auth code modal handlers
@@ -1626,6 +1675,14 @@ document.addEventListener('DOMContentLoaded', () => {
         authCodeCancelBtn.addEventListener('click', () => hideModal('auth-code-modal'));
     }
     
+    // Welcome modal handlers
+    const welcomeModal = document.getElementById('welcome-modal');
+    const welcomeContinueBtn = document.getElementById('welcome-modal-continue-button');
+    
+    if (welcomeContinueBtn) {
+        welcomeContinueBtn.addEventListener('click', () => hideModal('welcome-modal'));
+    }
+    
     // Allow Enter key to submit in modals
     if (loginEmailInput) {
         loginEmailInput.addEventListener('keypress', (e) => {
@@ -1644,11 +1701,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Close modals when clicking backdrop
-    [loginModal, authCodeModal].forEach(modal => {
+    [loginModal, authCodeModal, welcomeModal].forEach(modal => {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal || e.target.classList.contains('modal-backdrop')) {
                     hideModal(modal.id);
+                    if (modal.id === 'login-modal') {
+                        setTimeout(() => resetLoginModal(), 300);
+                    }
                 }
             });
         }
