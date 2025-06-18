@@ -29,10 +29,22 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // Mock user data for testing
+    // Mock user data for testing - simulate different token amounts based on auth code
+    // In real implementation, this would look up the user by auth code and return their actual tokens
+    let tokens = 200000; // Default micro plan
+    
+    // Simulate different plans for testing (based on auth code pattern)
+    if (authCode.startsWith('1')) {
+      tokens = 200000; // Micro
+    } else if (authCode.startsWith('2')) {
+      tokens = 500000; // Tinker  
+    } else if (authCode.startsWith('3')) {
+      tokens = 1000000; // Pro
+    }
+    
     const user = {
       email: 'test@example.com',
-      tokens: 1000
+      tokens: tokens
     };
 
     return {

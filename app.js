@@ -47,20 +47,13 @@ function updateAuthUI() {
             // User not logged in - show login button
             authBtn.textContent = 'Login';
             authBtn.onclick = () => {
-                // Prompt for auth code
-                const authCode = prompt('Enter your 8-digit login code:');
-                if (authCode && authCode.length === 8) {
-                    loginWithAuthCode(authCode);
-                }
+                showModal('login-modal');
             };
         }
         
         // Buy button always opens the tokens modal
         buyBtn.onclick = () => {
-            const modal = document.getElementById('tokens-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
+            showModal('tokens-modal');
         };
     });
 }
@@ -75,8 +68,14 @@ function checkUrlAuth() {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
         
-        // Attempt login
-        loginWithAuthCode(authCode);
+        // Auto-fill auth code modal and show it
+        setTimeout(() => {
+            const authCodeInput = document.getElementById('auth-code-input');
+            if (authCodeInput) {
+                authCodeInput.value = authCode;
+                showAuthCodeModal();
+            }
+        }, 500); // Small delay to ensure DOM is ready
     }
 }
 
@@ -1510,4 +1509,151 @@ function handleImageFile(imageFile, targetPreviewDiv, drawGroup, slotNumber) {
         }
     };
     reader.readAsDataURL(imageFile);
-} 
+}
+
+// Modal animation helper functions
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    const backdrop = modal.querySelector('.modal-backdrop');
+    const panel = modal.querySelector('.modal-panel');
+    
+    // Trigger animations
+    requestAnimationFrame(() => {
+        backdrop?.classList.remove('opacity-0');
+        backdrop?.classList.add('opacity-100');
+        panel?.classList.remove('opacity-0', 'translate-y-12', 'sm:scale-95');
+        panel?.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
+    });
+}
+
+function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    const backdrop = modal.querySelector('.modal-backdrop');
+    const panel = modal.querySelector('.modal-panel');
+    
+    // Trigger exit animations
+    backdrop?.classList.remove('opacity-100');
+    backdrop?.classList.add('opacity-0');
+    panel?.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
+    panel?.classList.add('opacity-0', 'translate-y-12', 'sm:scale-95');
+    
+    // Hide modal after animation
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+// Replace the auth code prompt with modal
+function showAuthCodeModal() {
+    showModal('auth-code-modal');
+    // Focus the input after modal is shown
+    setTimeout(() => {
+        const input = document.getElementById('auth-code-input');
+        if (input) input.focus();
+    }, 300);
+}
+
+// Send login email function
+async function sendLoginEmail(email) {
+    try {
+        const response = await fetch('/.netlify/functions/send-login-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            hideModal('login-modal');
+            alert(data.message);
+        } else {
+            alert(data.error || 'Failed to send login email');
+        }
+    } catch (error) {
+        console.error('Send login email error:', error);
+        alert('Failed to send login email. Please try again.');
+    }
+}
+
+// Initialize modal event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Login modal handlers
+    const loginModal = document.getElementById('login-modal');
+    const loginSendBtn = document.getElementById('login-modal-send-button');
+    const loginCancelBtn = document.getElementById('login-modal-cancel-button');
+    const loginEmailInput = document.getElementById('login-email');
+    
+    if (loginSendBtn) {
+        loginSendBtn.addEventListener('click', () => {
+            const email = loginEmailInput?.value.trim();
+            if (email) {
+                sendLoginEmail(email);
+            } else {
+                alert('Please enter your email address');
+            }
+        });
+    }
+    
+    if (loginCancelBtn) {
+        loginCancelBtn.addEventListener('click', () => hideModal('login-modal'));
+    }
+    
+    // Auth code modal handlers
+    const authCodeModal = document.getElementById('auth-code-modal');
+    const authCodeLoginBtn = document.getElementById('auth-code-modal-login-button');
+    const authCodeCancelBtn = document.getElementById('auth-code-modal-cancel-button');
+    const authCodeInput = document.getElementById('auth-code-input');
+    
+    if (authCodeLoginBtn) {
+        authCodeLoginBtn.addEventListener('click', () => {
+            const authCode = authCodeInput?.value.trim();
+            if (authCode && authCode.length === 8) {
+                hideModal('auth-code-modal');
+                loginWithAuthCode(authCode);
+            } else {
+                alert('Please enter a valid 8-digit code');
+            }
+        });
+    }
+    
+    if (authCodeCancelBtn) {
+        authCodeCancelBtn.addEventListener('click', () => hideModal('auth-code-modal'));
+    }
+    
+    // Allow Enter key to submit in modals
+    if (loginEmailInput) {
+        loginEmailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginSendBtn?.click();
+            }
+        });
+    }
+    
+    if (authCodeInput) {
+        authCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                authCodeLoginBtn?.click();
+            }
+        });
+    }
+    
+    // Close modals when clicking backdrop
+    [loginModal, authCodeModal].forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.classList.contains('modal-backdrop')) {
+                    hideModal(modal.id);
+                }
+            });
+        }
+    });
+    
+    // Handle login buttons in the new button pairs
+    updateAuthUI();
+}); 

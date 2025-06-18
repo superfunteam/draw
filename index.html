@@ -603,10 +603,10 @@
           </div>
         </div>
 
-        <div class="mt-6 px-4">
+        <div class="mt-6">
           <label for="user-email" class="block text-sm font-medium text-gray-900">Email address</label>
           <div class="mt-2">
-            <input type="email" name="user-email" id="user-email" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+            <input type="email" name="user-email" id="user-email" class="block w-full rounded-md border-0 py-1.5 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
           </div>
         </div>
 
@@ -691,6 +691,84 @@
         <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
           <button id="tokens-modal-buy-button" type="button" class="buy-tokens inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">BUY TOKENS</button>
           <button id="tokens-modal-cancel-button" type="button" data-modal-action="close" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div id="login-modal" class="hidden relative z-[99]" aria-labelledby="login-modal-title" role="dialog" aria-modal="true">
+  <div id="login-modal-backdrop" class="modal-backdrop fixed inset-0 bg-gray-500/75 transition-opacity opacity-0" aria-hidden="true"></div>
+  
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="login-modal-panel" class="modal-panel relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all opacity-0 translate-y-12 sm:translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:max-w-lg sm:p-6 pointer-events-auto">
+        <div>
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-indigo-600">
+              <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="mt-3 text-center sm:mt-5">
+            <h3 class="text-base font-semibold text-gray-900" id="login-modal-title">Login to Your Account</h3>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500">Enter your email and we'll send you a magic login link.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div>
+            <label for="login-email" class="block text-sm font-medium text-gray-900">Email address</label>
+            <div class="mt-2">
+              <input type="email" name="login-email" id="login-email" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+          <button id="login-modal-send-button" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Send Login Link</button>
+          <button id="login-modal-cancel-button" type="button" data-modal-action="close" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Code Confirmation Modal -->
+<div id="auth-code-modal" class="hidden relative z-[99]" aria-labelledby="auth-code-modal-title" role="dialog" aria-modal="true">
+  <div id="auth-code-modal-backdrop" class="modal-backdrop fixed inset-0 bg-gray-500/75 transition-opacity opacity-0" aria-hidden="true"></div>
+  
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div id="auth-code-modal-panel" class="modal-panel relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all opacity-0 translate-y-12 sm:translate-y-12 sm:scale-95 sm:my-8 sm:w-full sm:max-w-lg sm:p-6 pointer-events-auto">
+        <div>
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-indigo-600">
+              <path fill-rule="evenodd" d="M15.75 1.5a6.75 6.75 0 0 0-6.651 7.906c.067.39-.032.717-.221.906l-1.17 1.17a.75.75 0 0 0-.206 1.07c.329.4.851.67 1.448.67h1.5c.9 0 1.5.6 1.5 1.5v1.5c0 .597-.27 1.119-.67 1.448a.75.75 0 0 0-1.07.206l-1.17 1.17c-.189.189-.516.288-.906.221A6.75 6.75 0 0 1 1.5 9.75 6.75 6.75 0 0 1 8.25 3h.003c.218 0 .431.003.641.01a6.743 6.743 0 0 1 6.906 6.906c.007.21.01.423.01.641V12a6.75 6.75 0 0 1-13.5 0V9.75c0-.69.56-1.25 1.25-1.25s1.25.56 1.25 1.25V12A5.25 5.25 0 0 0 12 17.25 5.25 5.25 0 0 0 17.25 12v-1.5c0-.69.56-1.25 1.25-1.25s1.25.56 1.25 1.25V12a6.75 6.75 0 0 1-6.75 6.75z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="mt-3 text-center sm:mt-5">
+            <h3 class="text-base font-semibold text-gray-900" id="auth-code-modal-title">Enter Your Login Code</h3>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500">Please enter the 8-digit code from your email.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div>
+            <label for="auth-code-input" class="block text-sm font-medium text-gray-900">Login Code</label>
+            <div class="mt-2">
+              <input type="text" name="auth-code-input" id="auth-code-input" maxlength="8" class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 text-center font-mono text-lg tracking-widest" placeholder="12345678">
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+          <button id="auth-code-modal-login-button" type="button" class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2">Login</button>
+          <button id="auth-code-modal-cancel-button" type="button" data-modal-action="close" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-gray-300 ring-inset hover:bg-gray-50 sm:col-start-1 sm:mt-0">Cancel</button>
         </div>
       </div>
     </div>

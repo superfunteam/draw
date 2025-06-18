@@ -42,6 +42,11 @@ exports.handler = async function(event, context) {
     const authCode = generateAuthCode();
     
     // TODO: Database integration will be set up after deployment
+    // When database is ready, this should:
+    // 1. Check if user exists by email
+    // 2. If user exists, ADD tokens to their current balance (don't replace)
+    // 3. If new user, create with purchased token amount
+    // 4. Store auth code linked to user for login
     // For now, just generate auth code and send email
     console.log(`Generated auth code ${authCode} for ${email} with ${tokens} tokens`);
 
