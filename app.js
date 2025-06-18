@@ -29,10 +29,12 @@ function clearAuthState() {
 }
 
 // Format large numbers (e.g., 1,250,000 -> "1.25m", 354,000 -> "354k")
+// FRONTEND DISPLAY ONLY - Database always stores/uses real integers
 function formatTokenCount(tokens) {
     if (tokens >= 1000000) {
         const millions = tokens / 1000000;
-        return millions % 1 === 0 ? `${millions}m` : `${millions.toFixed(2).replace(/\.?0+$/, '')}m`;
+        // Always show 2 decimals for millions (e.g., 1.37m, 2.00m)
+        return `${millions.toFixed(2)}m`;
     } else if (tokens >= 1000) {
         const thousands = tokens / 1000;
         return thousands % 1 === 0 ? `${thousands}k` : `${thousands.toFixed(1).replace(/\.?0+$/, '')}k`;
