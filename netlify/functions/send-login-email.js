@@ -238,7 +238,9 @@ P.S. This code can only be used once. Need more tokens? You can purchase them fr
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: 'Check your email for login instructions!',
+        message: isNewUser ? 
+          "You're new here! Check your email for some welcome tokens!" :
+          "Welcome back, check your email for your magic login link.",
         isNewUser,
         tokens: userTokens,
         email

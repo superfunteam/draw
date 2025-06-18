@@ -1587,8 +1587,8 @@ async function sendLoginEmail(email) {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            // Show success state in login modal
-            showLoginSuccessState();
+            // Show success state in login modal with custom message
+            showLoginSuccessState(data.message);
         } else {
             alert(data.error || 'Failed to send login email');
         }
@@ -1617,10 +1617,15 @@ function showPurchaseSuccessModal(message) {
 }
 
 // Show success state in login modal
-function showLoginSuccessState() {
+function showLoginSuccessState(message) {
     const formSection = document.getElementById('login-form-section');
     const successMessage = document.getElementById('login-success-message');
     const successSection = document.getElementById('login-success-section');
+    
+    // Update the success message text with the custom message
+    if (successMessage && message) {
+        successMessage.textContent = message;
+    }
     
     if (formSection) formSection.classList.add('hidden');
     if (successMessage) successMessage.classList.remove('hidden');
