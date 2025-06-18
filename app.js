@@ -952,6 +952,9 @@ function attachButtonListeners(drawGroup) {
             newAiButton.querySelector('span').textContent = 'Improving...';
             svgIcon.classList.add('animate-pulse');
             
+            // Start loading animation for all textareas in this draw group
+            startTextareaLoadingAnimation(drawGroup);
+            
             try {
                 // Call ChatGPT API
                 console.log('Making API call...');
@@ -1005,6 +1008,9 @@ function attachButtonListeners(drawGroup) {
                 newAiButton.disabled = false;
                 newAiButton.querySelector('span').textContent = originalText;
                 svgIcon.classList.remove('animate-pulse');
+                
+                // Stop loading animation for all textareas in this draw group
+                stopTextareaLoadingAnimation(drawGroup);
             }
         });
     }
@@ -2549,4 +2555,45 @@ function showAuthCodeModal() {
         const input = document.getElementById('universal-auth-code');
         if (input) input.focus();
     }, 300);
+}
+
+// Start loading animation for textareas in a draw group
+function startTextareaLoadingAnimation(drawGroup) {
+    const textareas = drawGroup.querySelectorAll('textarea');
+    
+    textareas.forEach(textarea => {
+        // Store original placeholder
+        const originalPlaceholder = textarea.placeholder;
+        textarea.dataset.originalPlaceholder = originalPlaceholder;
+        
+        // Start animation
+        let isAsterisk = true;
+        textarea.placeholder = '*';
+        
+        const intervalId = setInterval(() => {
+            textarea.placeholder = isAsterisk ? '+' : '*';
+            isAsterisk = !isAsterisk;
+        }, 1000);
+        
+        // Store interval ID directly on the textarea element
+        textarea.dataset.loadingIntervalId = intervalId;
+    });
+}
+
+// Stop loading animation for textareas in a draw group
+function stopTextareaLoadingAnimation(drawGroup) {
+    const textareas = drawGroup.querySelectorAll('textarea');
+    
+    textareas.forEach(textarea => {
+        const intervalId = textarea.dataset.loadingIntervalId;
+        if (intervalId) {
+            clearInterval(parseInt(intervalId));
+            delete textarea.dataset.loadingIntervalId;
+            
+            // Restore original placeholder
+            const originalPlaceholder = textarea.dataset.originalPlaceholder || '';
+            textarea.placeholder = originalPlaceholder;
+            delete textarea.dataset.originalPlaceholder;
+        }
+    });
 } 
