@@ -484,12 +484,11 @@ function attachButtonListeners(drawGroup) {
         // Add click listeners to image preview slots for file picking or lightbox opening
         previews.forEach((previewSlot, slotIndex) => {
             previewSlot.addEventListener('click', () => {
+                console.log('Prompt image clicked, slot index:', slotIndex, 'has image:', !!previewSlot.dataset.pastedImageUrl);
+                
                 // If there's already an image, open the lightbox
                 if (previewSlot.dataset.pastedImageUrl) {
-                    const img = previewSlot.querySelector('img');
-                    if (img) {
-                        openLightbox(img, 'prompt');
-                    }
+                    openLightbox(previewSlot, 'prompt');
                 } else {
                     // No image yet, open file picker
                     const fileInput = document.createElement('input');
