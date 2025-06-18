@@ -623,16 +623,8 @@ function attachButtonListeners(drawGroup) {
                     }
                 }
                 
-                const savePdfBanner = document.querySelector('.save-pdf-banner');
-                if (savePdfBanner) {
-                    savePdfBanner.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
-                    savePdfBanner.classList.add('translate-y-0');
-                    // Move FAB up if it exists
-                    if (fabAddDrawGroup) {
-                        fabAddDrawGroup.classList.remove('bottom-6', 'lg:bottom-8');
-                        fabAddDrawGroup.classList.add('bottom-20'); 
-                    }
-                }
+                // Update PDF banner visibility based on preset
+                updatePdfBannerVisibility();
                 return;
             }
             
@@ -896,17 +888,8 @@ function attachButtonListeners(drawGroup) {
                         }
                     }
                     
-                    // Show the save PDF banner
-                    const savePdfBanner = document.querySelector('.save-pdf-banner');
-                    if (savePdfBanner) {
-                        savePdfBanner.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
-                        savePdfBanner.classList.add('translate-y-0');
-                        // Move FAB up if it exists
-                        if (fabAddDrawGroup) {
-                            fabAddDrawGroup.classList.remove('bottom-6', 'lg:bottom-8');
-                            fabAddDrawGroup.classList.add('bottom-20'); 
-                        }
-                    }
+                    // Update PDF banner visibility based on preset
+                    updatePdfBannerVisibility();
                 } else {
                     throw new Error('No image data received from API');
                 }
@@ -2068,6 +2051,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize Universal Modal System
     initializeUniversalModal();
+    
+    // Add preset change event listener
+    const presetSelect = document.getElementById('preset');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', () => {
+            updatePdfBannerVisibility();
+        });
+    }
 });
 
 // ============================================================================
@@ -2610,4 +2601,38 @@ function stopTextareaLoadingAnimation(drawGroup) {
             delete textarea.dataset.originalPlaceholder;
         }
     });
+}
+
+// Handle PDF banner visibility based on preset
+function updatePdfBannerVisibility() {
+    const presetSelect = document.getElementById('preset');
+    const savePdfBanner = document.querySelector('.save-pdf-banner');
+    const fabAddDrawGroup = document.querySelector('.add-draw-group');
+    
+    if (!savePdfBanner) return;
+    
+    const isColoringBook = presetSelect && presetSelect.value === 'Coloring Book';
+    
+    if (isColoringBook) {
+        // Check if any images have been generated
+        const hasGeneratedImages = document.querySelector('.canvas img:not(.loader img)');
+        if (hasGeneratedImages) {
+            savePdfBanner.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-full');
+            savePdfBanner.classList.add('translate-y-0');
+            // Move FAB up if it exists
+            if (fabAddDrawGroup) {
+                fabAddDrawGroup.classList.remove('bottom-6', 'lg:bottom-8');
+                fabAddDrawGroup.classList.add('bottom-20');
+            }
+        }
+    } else {
+        // Hide PDF banner for non-coloring book presets
+        savePdfBanner.classList.add('opacity-0', 'pointer-events-none', 'translate-y-full');
+        savePdfBanner.classList.remove('translate-y-0');
+        // Move FAB down if it exists
+        if (fabAddDrawGroup) {
+            fabAddDrawGroup.classList.remove('bottom-20');
+            fabAddDrawGroup.classList.add('bottom-6', 'lg:bottom-8');
+        }
+    }
 } 
