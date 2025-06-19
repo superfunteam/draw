@@ -68,46 +68,37 @@ exports.handler = async (event) => {
             // Connect to database
             const sql = neon(process.env.DATABASE_URL);
             
-            // Check if user exists
+            // Check if user exists (email is the primary key)
             const existingUser = await sql`
-                SELECT id, email, tokens FROM users WHERE email = ${email}
+                SELECT email, tokens FROM users WHERE email = ${email}
             `;
             
-            let userId, newTotalTokens, isNewUser;
+            let newTotalTokens, isNewUser;
             
             if (existingUser.length > 0) {
                 // Existing user - add tokens
-                userId = existingUser[0].id;
                 const currentTokens = existingUser[0].tokens || 0;
                 newTotalTokens = currentTokens + tokensToAdd;
                 
                 await sql`
                     UPDATE users 
-                    SET tokens = ${newTotalTokens}
-                    WHERE id = ${userId}
+                    SET tokens = ${newTotalTokens}, updated_at = CURRENT_TIMESTAMP
+                    WHERE email = ${email}
                 `;
                 
                 isNewUser = false;
                 console.log(`Updated existing user ${email}: ${currentTokens} + ${tokensToAdd} = ${newTotalTokens} tokens`);
             } else {
                 // New user - create with tokens
-                const result = await sql`
-                    INSERT INTO users (email, tokens)
-                    VALUES (${email}, ${tokensToAdd})
-                    RETURNING id
+                await sql`
+                    INSERT INTO users (email, tokens, created_at, updated_at)
+                    VALUES (${email}, ${tokensToAdd}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 `;
                 
-                userId = result[0].id;
                 newTotalTokens = tokensToAdd;
                 isNewUser = true;
                 console.log(`Created new user ${email} with ${tokensToAdd} tokens`);
             }
-            
-            // Record the transaction
-            await sql`
-                INSERT INTO token_transactions (user_id, amount, type, description)
-                VALUES (${userId}, ${tokensToAdd}, 'purchase', ${`Stripe payment - ${plan} plan`})
-            `;
             
             // Send confirmation email
             const emailContent = isNewUser 
