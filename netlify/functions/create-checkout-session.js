@@ -66,6 +66,10 @@ exports.handler = async (event) => {
         }
 
         const package = PRICING[plan];
+        const baseUrl = getBaseUrl();
+        
+        console.log('Base URL:', baseUrl);
+        console.log('Success URL will be:', `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}`);
         
         // Create Stripe checkout session
         const session = await stripe.checkout.sessions.create({
@@ -82,8 +86,8 @@ exports.handler = async (event) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${getBaseUrl()}/?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${getBaseUrl()}/?canceled=true`,
+            success_url: `${baseUrl}/?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${baseUrl}/?canceled=true`,
             customer_email: email,
             metadata: {
                 email: email,
