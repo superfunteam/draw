@@ -21,17 +21,17 @@ const getBaseUrl = () => {
 const PRICING = {
     micro: {
         tokens: 200000,
-        price: 1000, // $10.00 in cents
+        price: 100, // $1.00 in cents for testing
         name: 'Micro - 200k tokens'
     },
     tinker: {
         tokens: 500000,
-        price: 1500, // $15.00 in cents
+        price: 100, // $1.00 in cents for testing
         name: 'Tinker - 500k tokens (Save 25%)'
     },
     pro: {
         tokens: 1000000,
-        price: 2000, // $20.00 in cents
+        price: 100, // $1.00 in cents for testing
         name: 'Pro - 1M tokens (Save 50%)'
     }
 };

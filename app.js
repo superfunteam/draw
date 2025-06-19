@@ -2139,7 +2139,7 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$10</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
                         <span class="text-gray-500 group-has-checked:text-indigo-700">(200k tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
@@ -2164,7 +2164,7 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$15</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
                         <span class="text-gray-500 group-has-checked:text-indigo-700">(500k tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
@@ -2192,7 +2192,7 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$20</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
                         <span class="text-gray-500 group-has-checked:text-indigo-700">(1M tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
