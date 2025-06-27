@@ -127,27 +127,38 @@ Continue creating at https://app.draw.superfun.games
 Happy drawing!
 The Superfun Team`;
 
-            const emailRequest = mailjet.post('send', { version: 'v3.1' }).request({
-                Messages: [
-                    {
-                        From: {
-                            Email: 'hello@superfun.games',
-                            Name: 'Superfun Draw'
-                        },
-                        To: [
+            // Send email with error handling
+            try {
+                if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+                    console.error('Mailjet credentials not configured');
+                } else {
+                    const emailRequest = mailjet.post('send', { version: 'v3.1' }).request({
+                        Messages: [
                             {
-                                Email: email,
-                                Name: email.split('@')[0]
+                                From: {
+                                    Email: 'clark@superfun.team',
+                                    Name: 'Superfun Draw'
+                                },
+                                To: [
+                                    {
+                                        Email: email,
+                                        Name: email.split('@')[0]
+                                    }
+                                ],
+                                Subject: '🎯 Superfun Draw - Payment Confirmed!',
+                                TextPart: emailContent
                             }
-                        ],
-                        Subject: '🎯 Superfun Draw - Payment Confirmed!',
-                        TextPart: emailContent
-                    }
-                ]
-            });
+                        ]
+                    });
 
-            await emailRequest;
-            console.log(`Confirmation email sent to ${email}`);
+                    const emailResult = await emailRequest;
+                    console.log(`Confirmation email sent to ${email}`);
+                    console.log('Email response:', emailResult.response?.status);
+                }
+            } catch (emailError) {
+                console.error('Failed to send confirmation email:', emailError.message);
+                // Don't fail the webhook if email fails
+            }
             
             return {
                 statusCode: 200,
