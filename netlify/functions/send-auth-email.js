@@ -38,7 +38,7 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const siteUrl = process.env.URL || 'https://draw.superfun.games';
+    const siteUrl = process.env.URL || 'https://app.draw.superfun.games';
     const loginUrl = `${siteUrl}/?auth=${authCode}`;
 
     const emailContent = `

@@ -170,7 +170,7 @@ exports.handler = async function(event, context) {
         process.env.MAILJET_SECRET_KEY
       );
 
-      const siteUrl = process.env.URL || 'https://draw.superfun.games';
+      const siteUrl = process.env.URL || 'https://app.draw.superfun.games';
       const loginUrl = `${siteUrl}/?auth=${authCode}`;
 
       // Different email content based on user status

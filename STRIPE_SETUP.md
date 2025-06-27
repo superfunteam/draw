@@ -3,7 +3,7 @@
 ## Webhook Configuration
 
 1. Go to your Stripe Dashboard > Developers > Webhooks
-2. Add endpoint with URL: `https://draw.superfun.games/.netlify/functions/stripe-webhook`
+2. Add endpoint with URL: `https://app.draw.superfun.games/.netlify/functions/stripe-webhook`
 3. Select events to listen to:
    - `checkout.session.completed`
 4. Copy the signing secret and set it in Netlify:
@@ -16,7 +16,7 @@
 - `STRIPE_PUBLISHABLE_KEY` - Already set
 - `STRIPE_SECRET_KEY` - Already set
 - `STRIPE_WEBHOOK_SECRET` - Needs to be set from Stripe Dashboard
-- `URL` - Your site URL (e.g., https://draw.superfun.games)
+- `URL` - Your site URL (e.g., https://app.draw.superfun.games)
 
 ## Testing
 

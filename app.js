@@ -681,7 +681,7 @@ function attachButtonListeners(drawGroup) {
             const drawingsSelect = document.getElementById('drawings');
             const numImages = drawingsSelect ? drawingsSelect.value : '1';
             
-            let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so. DO NOT use any colors other than black and white, never use color. Here is the prompt:"; // Default
+            let promptPrefix = "As a child's coloring book artist, draw a simple coloring book sheet. DO NOT include any text in the image unless explicitly instructed to do so (and if so, make sure to include it as-is). DO NOT use any colors other than black and white, never use color. Here is the prompt:"; // Default
             if (presetSelect) {
                 switch (presetSelect.value) {
                     case "Photo":

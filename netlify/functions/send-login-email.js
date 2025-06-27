@@ -164,7 +164,7 @@ exports.handler = async function(event, context) {
     const savedUser = await saveUser(email, userTokens, authCode);
     console.log('DEBUG: Saved user to database:', savedUser);
 
-    const siteUrl = process.env.URL || 'https://draw.superfun.games';
+    const siteUrl = process.env.URL || 'https://app.draw.superfun.games';
     const loginUrl = `${siteUrl}/?auth=${authCode}`;
 
     // Email content based on whether user is new or existing

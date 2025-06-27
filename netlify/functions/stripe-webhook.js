@@ -110,7 +110,7 @@ Your payment was successful! Here's what you got:
 🪙 Tokens added: ${tokensToAdd}
 💰 Total tokens: ${newTotalTokens}
 
-You can now start creating amazing drawings at https://draw.superfun.games
+You can now start creating amazing drawings at https://app.draw.superfun.games
 
 Happy drawing!
 The Superfun Team`
@@ -122,7 +122,7 @@ Your token purchase was completed successfully:
 🪙 Tokens added: ${tokensToAdd}
 💰 New balance: ${newTotalTokens} tokens
 
-Continue creating at https://draw.superfun.games
+Continue creating at https://app.draw.superfun.games
 
 Happy drawing!
 The Superfun Team`;
