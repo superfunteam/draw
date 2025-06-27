@@ -2128,7 +2128,7 @@ const modalTemplates = {
             </div>
 
             <fieldset aria-label="Pricing plans" class="mt-6 relative -space-y-px rounded-md bg-white">
-                <label aria-label="Micro" aria-description="$10, 200k tokens, Base price" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Micro" aria-description="$5, 100k tokens, Base price" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="micro" type="radio" checked class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2139,8 +2139,8 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
-                        <span class="text-gray-500 group-has-checked:text-indigo-700">(200k tokens)</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$5</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">(100k tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
                         <span>Base price</span>
@@ -2149,7 +2149,7 @@ const modalTemplates = {
                         </svg>
                     </span>
                 </label>
-                <label aria-label="Tinker" aria-description="$15, 500k tokens, Save 25%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Tinker" aria-description="$10, 250k tokens, Save 20%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="tinker" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2160,12 +2160,12 @@ const modalTemplates = {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 text-amber-400 relative -left-1.5">
                                 <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
                             </svg>
-                            <span class="text-indigo-600 text-sm font-normal relative -left-1">Save 25%</span>
+                            <span class="text-indigo-600 text-sm font-normal relative -left-1">Save 20%</span>
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
-                        <span class="text-gray-500 group-has-checked:text-indigo-700">(500k tokens)</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$10</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">(250k tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
                         <span>2.5x value</span>
@@ -2174,7 +2174,7 @@ const modalTemplates = {
                         </svg>
                     </span>
                 </label>
-                <label aria-label="Pro" aria-description="$20, 1M tokens, Save 50%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Pro" aria-description="$25, 1M tokens, Save 50%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="pro" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2192,7 +2192,7 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$1</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$25</span>
                         <span class="text-gray-500 group-has-checked:text-indigo-700">(1M tokens)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">

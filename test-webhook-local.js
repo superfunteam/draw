@@ -25,7 +25,7 @@ const mockEvent = {
                 metadata: {
                     email: 'test@example.com',
                     plan: 'micro',
-                    tokens: '200000'
+                    tokens: '100000'
                 }
             }
         }
