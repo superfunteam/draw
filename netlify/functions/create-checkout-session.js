@@ -20,19 +20,19 @@ const getBaseUrl = () => {
 // Token package pricing
 const PRICING = {
     micro: {
-        tokens: 100000,
+        tokens: 50000,
         price: 500, // $5.00 in cents
-        name: 'Micro - 100k tokens'
+        name: 'Micro - 50k tokens'
     },
     tinker: {
-        tokens: 250000,
+        tokens: 150000,
         price: 1000, // $10.00 in cents
-        name: 'Tinker - 250k tokens (Save 20%)'
+        name: 'Tinker - 150k tokens (Save 33%)'
     },
     pro: {
-        tokens: 1000000,
+        tokens: 500000,
         price: 2500, // $25.00 in cents
-        name: 'Pro - 1M tokens (Save 50%)'
+        name: 'Pro - 500k tokens (Save 50%)'
     }
 };
 

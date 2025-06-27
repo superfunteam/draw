@@ -120,14 +120,14 @@ exports.handler = async function(event, context) {
         console.log(`⚠️ ENCODED FALLBACK: Using decoded token data from auth code: ${authCode}, tokens: ${decodedTokens}`);
       } else {
         // Final fallback for testing - simulate different token amounts based on auth code pattern
-        let tokens = 100000; // Default micro plan
+        let tokens = 50000; // Default micro plan
         
         if (authCode.startsWith('1')) {
-          tokens = 100000; // Micro
+          tokens = 50000; // Micro
         } else if (authCode.startsWith('2')) {
-          tokens = 250000; // Tinker  
+          tokens = 150000; // Tinker  
         } else if (authCode.startsWith('3')) {
-          tokens = 1000000; // Pro
+          tokens = 500000; // Pro
         }
         
         user = {

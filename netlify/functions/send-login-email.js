@@ -24,8 +24,8 @@ function checkEmailExists(email) {
     'test@example.com': { tokens: 50000 },
     'clark@superfun.team': { tokens: 1001000 }, // Updated based on your test
     'clark@example.com': { tokens: 1001000 },
-    'test@gmail.com': { tokens: 100000 },
-    'user@test.com': { tokens: 100000 }
+    'test@gmail.com': { tokens: 50000 },
+    'user@test.com': { tokens: 50000 }
   };
   
   // For testing: check known test emails first
@@ -38,7 +38,7 @@ function checkEmailExists(email) {
   // Heuristic: if email contains digits or specific domains, assume existing user with some tokens
   // This is a temporary solution until we have real persistence
   if (/\d/.test(emailLower) || emailLower.includes('gmail') || emailLower.includes('yahoo') || emailLower.includes('test')) {
-    return { tokens: 100000 }; // Default existing user tokens
+    return { tokens: 50000 }; // Default existing user tokens
   }
   
   return null; // New user
