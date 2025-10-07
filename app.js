@@ -2610,7 +2610,7 @@ const modalTemplates = {
             </div>
 
             <fieldset aria-label="Pricing plans" class="mt-6 relative -space-y-px rounded-md bg-white">
-                <label aria-label="Micro" aria-description="$5, 50k tokens, Base price" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Micro" aria-description="$10, $10 credit, Base plan" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="micro" type="radio" checked class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2621,17 +2621,17 @@ const modalTemplates = {
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$5</span>
-                        <span class="text-gray-500 group-has-checked:text-indigo-700">(50k tokens)</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$10</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">($10 credit)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
-                        <span>Base price</span>
+                        <span>Base plan</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                         </svg>
                     </span>
                 </label>
-                <label aria-label="Tinker" aria-description="$10, 150k tokens, Save 33%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Tinker" aria-description="$25, $25 credit, Popular" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="tinker" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2642,21 +2642,21 @@ const modalTemplates = {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 text-amber-400 relative -left-1.5">
                                 <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
                             </svg>
-                            <span class="text-indigo-600 text-sm font-normal relative -left-1">Save 33%</span>
+                            <span class="text-indigo-600 text-sm font-normal relative -left-1">Popular</span>
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$10</span>
-                        <span class="text-gray-500 group-has-checked:text-indigo-700">(150k tokens)</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$25</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">($25 credit)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
-                        <span>3x more</span>
+                        <span>2.5x more</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                         </svg>
                     </span>
                 </label>
-                <label aria-label="Pro" aria-description="$25, 500k tokens, Save 50%" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
+                <label aria-label="Pro" aria-description="$75, $100 credit, Best value!" class="group pricing-plan-label flex cursor-pointer flex-col border border-gray-200 p-4 first:rounded-tl-md first:rounded-tr-md last:rounded-br-md last:rounded-bl-md focus:outline-hidden has-checked:relative has-checked:border-indigo-200 has-checked:bg-indigo-50 md:grid md:grid-cols-3 md:px-4">
                     <span class="flex items-center gap-3 text-sm">
                         <input name="universal-pricing-plan" value="pro" type="radio" class="pricing-plan-radio relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-indigo-600 checked:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden">
                         <span class="font-medium text-gray-900 group-has-checked:text-indigo-900 flex items-center gap-1">
@@ -2670,15 +2670,15 @@ const modalTemplates = {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 text-amber-400 relative -left-3">
                                 <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
                             </svg>
-                            <span class="text-indigo-600 text-sm font-normal relative -left-3">Save 50%</span>
+                            <span class="text-indigo-600 text-sm font-normal relative -left-3">Best value!</span>
                         </span>
                     </span>
                     <span class="ml-6 pl-1 text-sm md:ml-0 md:pl-0 md:text-right">
-                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$25</span>
-                        <span class="text-gray-500 group-has-checked:text-indigo-700">(500k tokens)</span>
+                        <span class="font-medium text-gray-900 group-has-checked:text-indigo-900">$75</span>
+                        <span class="text-gray-500 group-has-checked:text-indigo-700">($100 credit!)</span>
                     </span>
                     <span class="ml-6 pl-1 text-sm text-gray-500 group-has-checked:text-indigo-700 md:ml-0 md:pl-0 md:text-right flex items-center md:justify-end gap-1">
-                        <span>10x more</span>
+                        <span>33% bonus!</span>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
                         </svg>
