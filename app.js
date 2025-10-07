@@ -50,11 +50,116 @@ function calculateVideoCost(model, duration, size) {
             costPerSecond = 33; // $0.33 per second = 33 cents
         }
     } else {
-        // For image models, return 0 (images are free for now or calculated differently)
         return 0;
     }
     
     return costPerSecond * parseInt(duration);
+}
+
+// Calculate image generation cost in cents (with 10% overhead)
+function calculateImageCost(model, quality, size) {
+    let baseCost = 0;
+    
+    // Determine if size is landscape/portrait or square
+    const isLarger = size === '1024x1536' || size === '1536x1024';
+    
+    // GPT Image 1 pricing
+    if (model === 'gpt-image-1') {
+        if (quality === 'low') {
+            baseCost = isLarger ? 2 : 1; // $0.016 or $0.011 with 10% overhead
+        } else if (quality === 'medium') {
+            baseCost = isLarger ? 7 : 5; // $0.063 or $0.042 with 10% overhead
+        } else if (quality === 'high') {
+            baseCost = isLarger ? 28 : 18; // $0.25 or $0.167 with 10% overhead
+        } else { // auto
+            baseCost = isLarger ? 7 : 5; // Default to medium
+        }
+    }
+    // DALL·E 3 pricing
+    else if (model === 'dall-e-3') {
+        if (quality === 'hd') {
+            baseCost = isLarger ? 13 : 9; // $0.12 or $0.08 with 10% overhead
+        } else { // standard
+            baseCost = isLarger ? 9 : 4; // $0.08 or $0.04 with 10% overhead
+        }
+    }
+    // DALL·E 2 pricing
+    else if (model === 'dall-e-2') {
+        baseCost = 2; // $0.016-$0.02 with 10% overhead, averaged to 2 cents
+    }
+    // Default fallback
+    else {
+        baseCost = 5; // Default 5 cents for unknown models
+    }
+    
+    return baseCost;
+}
+
+// Create/update generation overlay UI on canvas
+function createGenerationOverlay(canvas) {
+    // Remove existing overlay if any
+    let overlay = canvas.querySelector('.generation-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'generation-overlay absolute inset-0 pointer-events-none flex justify-between p-4';
+        canvas.style.position = 'relative';
+        canvas.appendChild(overlay);
+    }
+    return overlay;
+}
+
+function updateOverlayPercentage(canvas, percentage) {
+    const overlay = canvas.querySelector('.generation-overlay');
+    if (!overlay) return;
+    
+    let percentDiv = overlay.querySelector('.overlay-percent');
+    if (!percentDiv) {
+        percentDiv = document.createElement('div');
+        percentDiv.className = 'overlay-percent text-white bg-black bg-opacity-70 px-2 py-1 rounded text-sm font-semibold self-start';
+        overlay.appendChild(percentDiv);
+    }
+    percentDiv.textContent = `${percentage}%`;
+}
+
+function updateOverlayTimer(canvas, seconds) {
+    const overlay = canvas.querySelector('.generation-overlay');
+    if (!overlay) return;
+    
+    let timerDiv = overlay.querySelector('.overlay-timer');
+    if (!timerDiv) {
+        timerDiv = document.createElement('div');
+        timerDiv.className = 'overlay-timer text-white bg-black bg-opacity-70 px-2 py-1 rounded text-sm font-semibold self-start ml-auto';
+        overlay.appendChild(timerDiv);
+    }
+    timerDiv.textContent = `${seconds}s`;
+}
+
+function showOverlayCost(canvas, cents) {
+    const overlay = canvas.querySelector('.generation-overlay');
+    if (!overlay) return;
+    
+    // Clear overlay content
+    overlay.innerHTML = '';
+    
+    // Add cost display in top-right
+    const costDiv = document.createElement('div');
+    costDiv.className = 'overlay-cost text-white bg-green-600 bg-opacity-90 px-3 py-1 rounded text-sm font-bold self-start ml-auto';
+    costDiv.textContent = formatDollarAmount(cents);
+    overlay.appendChild(costDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (overlay && overlay.parentElement) {
+            overlay.remove();
+        }
+    }, 5000);
+}
+
+function clearGenerationOverlay(canvas) {
+    const overlay = canvas.querySelector('.generation-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
 }
 
 // Update UI based on auth state
@@ -936,6 +1041,16 @@ function attachButtonListeners(drawGroup) {
             newDrawButton.querySelector('span').textContent = isVideoModel ? 'Creating video...' : 'Drawing...';
             svgIcon.classList.add('animate-pulse');
             
+            // Create overlay for timer/progress
+            createGenerationOverlay(canvas);
+            
+            // Start timer
+            let timerSeconds = 0;
+            const timerInterval = setInterval(() => {
+                timerSeconds++;
+                updateOverlayTimer(canvas, timerSeconds);
+            }, 1000);
+            
             try {
                 
                 // === VIDEO GENERATION WORKFLOW ===
@@ -1059,6 +1174,9 @@ function attachButtonListeners(drawGroup) {
                         
                         newDrawButton.querySelector('span').textContent = `Creating video... ${progress}%`;
                         
+                        // Update overlay with percentage
+                        updateOverlayPercentage(canvas, progress);
+                        
                         // Check if we're stuck at 100% progress
                         if (progress === 100 && videoStatus === 'in_progress') {
                             stuckAt100Count++;
@@ -1165,6 +1283,10 @@ function attachButtonListeners(drawGroup) {
                     const centsUsed = calculateVideoCost(qualityValue, duration, imageSize);
                     console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for ${duration}s ${qualityValue} video at ${imageSize}`);
                     await deductTokens(centsUsed);
+                    
+                    // Stop timer and show cost
+                    clearInterval(timerInterval);
+                    showOverlayCost(canvas, centsUsed);
                     
                     console.log('[Sora] ✅ Video generation complete and displayed!');
                     
@@ -1299,9 +1421,10 @@ function attachButtonListeners(drawGroup) {
                 }
                 
                 if (imageData) {
-                    // Deduct tokens based on API usage
-                    const tokensUsed = data.usage?.total_tokens || 100; // fallback if usage not provided
-                    await deductTokens(tokensUsed);
+                    // Deduct cents based on calculated image cost
+                    const centsUsed = calculateImageCost(modelValue, qualityValue, imageSize);
+                    console.log(`Deducting ${formatDollarAmount(centsUsed)} for ${modelValue} ${qualityValue} image at ${imageSize}`);
+                    await deductTokens(centsUsed);
                     
                     // Hide both empty message and loader
                     emptyMessage.classList.add('hidden');
@@ -1325,6 +1448,10 @@ function attachButtonListeners(drawGroup) {
                     if (imageActions) {
                         imageActions.classList.remove('hidden');
                     }
+                    
+                    // Stop timer and show cost
+                    clearInterval(timerInterval);
+                    showOverlayCost(canvas, centsUsed);
 
                     // Log the revised prompt for reference (different structure for different endpoints)
                     if (imageReferences.length > 0) {
@@ -1353,6 +1480,10 @@ function attachButtonListeners(drawGroup) {
                 errorDiv.textContent = `Error: ${error.message}`;
                 canvas.innerHTML = '';
                 canvas.appendChild(errorDiv);
+                
+                // Clear timer on error
+                clearInterval(timerInterval);
+                clearGenerationOverlay(canvas);
             } finally {
                 // Re-enable button and restore original text
                 newDrawButton.disabled = false;
