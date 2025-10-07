@@ -115,7 +115,7 @@ function updateOverlayPercentage(canvas, percentage) {
     let percentDiv = overlay.querySelector('.overlay-percent');
     if (!percentDiv) {
         percentDiv = document.createElement('div');
-        percentDiv.className = 'overlay-percent text-white bg-black bg-opacity-70 px-2 py-1 rounded text-sm font-semibold self-start';
+        percentDiv.className = 'overlay-percent text-gray-900 bg-white bg-opacity-90 px-2 py-1 rounded text-sm font-semibold self-start';
         overlay.appendChild(percentDiv);
     }
     percentDiv.textContent = `${percentage}%`;
@@ -128,7 +128,7 @@ function updateOverlayTimer(canvas, seconds) {
     let timerDiv = overlay.querySelector('.overlay-timer');
     if (!timerDiv) {
         timerDiv = document.createElement('div');
-        timerDiv.className = 'overlay-timer text-white bg-black bg-opacity-70 px-2 py-1 rounded text-sm font-semibold self-start ml-auto';
+        timerDiv.className = 'overlay-timer text-gray-900 bg-white bg-opacity-90 px-2 py-1 rounded text-sm font-semibold self-start ml-auto';
         overlay.appendChild(timerDiv);
     }
     timerDiv.textContent = `${seconds}s`;
@@ -143,7 +143,7 @@ function showOverlayCost(canvas, cents) {
     
     // Add cost display in top-right
     const costDiv = document.createElement('div');
-    costDiv.className = 'overlay-cost text-white bg-green-600 bg-opacity-90 px-3 py-1 rounded text-sm font-bold self-start ml-auto';
+    costDiv.className = 'overlay-cost text-green-700 bg-white bg-opacity-90 px-3 py-1 rounded text-sm font-bold self-start ml-auto';
     costDiv.textContent = formatDollarAmount(cents);
     overlay.appendChild(costDiv);
     
