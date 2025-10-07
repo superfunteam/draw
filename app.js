@@ -1,6 +1,10 @@
 // Auth state management
 let currentUser = null;
 
+// Store last failed video ID for manual retry
+let lastFailedVideoId = null;
+let lastFailedVideoParams = null;
+
 // Load auth state from localStorage
 function loadAuthState() {
     const stored = localStorage.getItem('superfun_auth');
@@ -160,6 +164,130 @@ function clearGenerationOverlay(canvas) {
     if (overlay) {
         overlay.remove();
     }
+}
+
+// Download and display video, deducting credits only on success
+async function downloadAndDisplayVideo(videoId, canvas, drawGroup, centsUsed, timerInterval) {
+    const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
+        headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
+    });
+    
+    if (!videoResponse.ok) {
+        const errorText = await videoResponse.text();
+        console.error('[Sora] Download failed:', videoResponse.status, errorText);
+        throw new Error('Failed to download video');
+    }
+    
+    const videoBlob = await videoResponse.blob();
+    const videoUrl = URL.createObjectURL(videoBlob);
+    
+    console.log('[Sora] Video downloaded successfully!');
+    console.log('[Sora] Video size:', (videoBlob.size / 1024 / 1024).toFixed(2), 'MB');
+    console.log('[Sora] Video type:', videoBlob.type);
+    
+    // Create video element
+    const videoElement = document.createElement('video');
+    videoElement.src = videoUrl;
+    videoElement.controls = true;
+    videoElement.autoplay = true;
+    videoElement.loop = true;
+    videoElement.classList.add('api-video', 'w-full', 'h-full', 'object-contain');
+    videoElement.style.maxHeight = '100%';
+    videoElement.dataset.videoBlobUrl = videoUrl;
+    
+    // Hide loader and add video to canvas
+    const loader = canvas.querySelector('.loader');
+    if (loader) loader.classList.add('hidden');
+    
+    canvas.appendChild(videoElement);
+    
+    // Show image actions (copy/download buttons)
+    const imageActions = drawGroup.querySelector('.image-actions');
+    if (imageActions) {
+        imageActions.classList.remove('hidden');
+    }
+    
+    // Deduct credits ONLY on successful download
+    console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for successful video`);
+    await deductTokens(centsUsed);
+    
+    // Stop timer and show cost
+    clearInterval(timerInterval);
+    showOverlayCost(canvas, centsUsed);
+    
+    return videoElement;
+}
+
+// Show retry button UI for failed video generation
+function showRetryButton(canvas, videoId, params) {
+    lastFailedVideoId = videoId;
+    lastFailedVideoParams = params;
+    
+    // Create retry UI in canvas
+    const retryDiv = document.createElement('div');
+    retryDiv.className = 'retry-container flex flex-col items-center justify-center gap-4 p-8';
+    retryDiv.innerHTML = `
+        <div class="text-red-600 font-semibold">Video generation failed</div>
+        <div class="text-sm text-gray-600">Video ID: ${videoId}</div>
+        <button class="retry-download-btn bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+            Retry Download
+        </button>
+    `;
+    
+    canvas.innerHTML = '';
+    canvas.appendChild(retryDiv);
+    
+    // Add click handler for retry button
+    const retryBtn = retryDiv.querySelector('.retry-download-btn');
+    retryBtn.addEventListener('click', async () => {
+        retryBtn.disabled = true;
+        retryBtn.textContent = 'Checking...';
+        
+        try {
+            const response = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+                headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to check video status');
+            
+            const videoData = await response.json();
+            
+            if (videoData.status === 'completed') {
+                // Download and display
+                retryBtn.textContent = 'Downloading...';
+                
+                // Get the parent draw group
+                const drawGroup = canvas.closest('.draw-group');
+                if (!drawGroup) throw new Error('Could not find draw group');
+                
+                // Calculate cost and download
+                const centsUsed = calculateVideoCost(params.model, params.duration, params.size);
+                
+                // Show loader
+                const loader = canvas.querySelector('.loader');
+                if (loader) {
+                    loader.classList.remove('hidden');
+                }
+                
+                // Clear retry UI
+                retryDiv.remove();
+                
+                // Create a dummy timer interval (no need to count since video is ready)
+                const dummyInterval = setInterval(() => {}, 1000);
+                
+                await downloadAndDisplayVideo(videoId, canvas, drawGroup, centsUsed, dummyInterval);
+                
+                retryBtn.textContent = 'Success!';
+            } else {
+                retryBtn.disabled = false;
+                retryBtn.textContent = `Status: ${videoData.status} - Retry Download`;
+            }
+        } catch (error) {
+            console.error('Retry failed:', error);
+            retryBtn.disabled = false;
+            retryBtn.textContent = 'Retry Failed - Try Again';
+        }
+    });
 }
 
 // Update UI based on auth state
@@ -1219,7 +1347,42 @@ function attachButtonListeners(drawGroup) {
                     if (videoStatus === 'failed') {
                         const errorMessage = finalStatusData.error?.message || 'Video generation failed';
                         console.error('[Sora] Generation failed:', errorMessage);
-                        throw new Error(errorMessage);
+                        
+                        // Store video ID for potential manual retry
+                        lastFailedVideoId = videoId;
+                        lastFailedVideoParams = {
+                            model: qualityValue,
+                            duration: duration,
+                            size: imageSize
+                        };
+                        
+                        // Attempt automatic retry after 45 seconds
+                        console.log('[Sora] Attempting automatic retry in 45 seconds...');
+                        newDrawButton.querySelector('span').textContent = 'Generation failed. Retrying in 45s...';
+                        
+                        await new Promise(resolve => setTimeout(resolve, 45000)); // Wait 45 seconds
+                        
+                        console.log('[Sora] Retry attempt - checking video status...');
+                        const retryResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+                            headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
+                        });
+                        
+                        if (retryResponse.ok) {
+                            const retryData = await retryResponse.json();
+                            console.log('[Sora] Retry status:', retryData.status);
+                            
+                            if (retryData.status === 'completed') {
+                                // Success! Continue to download
+                                console.log('[Sora] Video completed on retry!');
+                                finalStatusData = retryData;
+                                videoStatus = 'completed';
+                            } else {
+                                // Still failed/incomplete - will show retry button in catch
+                                throw new Error(`${errorMessage} (ID: ${videoId})`);
+                            }
+                        } else {
+                            throw new Error(`${errorMessage} (ID: ${videoId})`);
+                        }
                     }
                     
                     if (videoStatus !== 'completed') {
@@ -1234,59 +1397,12 @@ function attachButtonListeners(drawGroup) {
                         console.log('[Sora] No usage data in response');
                     }
                     
-                    // Step 3: Download the video
+                    // Step 3: Download the video using reusable function
                     console.log('[Sora] Video completed! Downloading...');
                     newDrawButton.querySelector('span').textContent = 'Downloading video...';
                     
-                    const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
-                        headers: {
-                            'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-                        }
-                    });
-                    
-                    if (!videoResponse.ok) {
-                        const errorText = await videoResponse.text();
-                        console.error('[Sora] Download failed:', videoResponse.status, errorText);
-                        throw new Error('Failed to download video');
-                    }
-                    
-                    const videoBlob = await videoResponse.blob();
-                    const videoUrl = URL.createObjectURL(videoBlob);
-                    
-                    console.log('[Sora] Video downloaded successfully!');
-                    console.log('[Sora] Video size:', (videoBlob.size / 1024 / 1024).toFixed(2), 'MB');
-                    console.log('[Sora] Video type:', videoBlob.type);
-                    
-                    // Step 4: Display video in canvas
-                    const videoElement = document.createElement('video');
-                    videoElement.src = videoUrl;
-                    videoElement.controls = true;
-                    videoElement.autoplay = true;
-                    videoElement.loop = true;
-                    videoElement.classList.add('api-video', 'w-full', 'h-full', 'object-contain');
-                    videoElement.style.maxHeight = '100%';
-                    
-                    // Store the blob URL for download/copy operations
-                    videoElement.dataset.videoBlobUrl = videoUrl;
-                    
-                    // Hide loader and add video to canvas
-                    loader.classList.add('hidden');
-                    canvas.appendChild(videoElement);
-                    
-                    // Show image actions (copy/download buttons)
-                    const imageActions = drawGroup.querySelector('.image-actions');
-                    if (imageActions) {
-                        imageActions.classList.remove('hidden');
-                    }
-                    
-                    // Deduct cents for video generation based on actual parameters
                     const centsUsed = calculateVideoCost(qualityValue, duration, imageSize);
-                    console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for ${duration}s ${qualityValue} video at ${imageSize}`);
-                    await deductTokens(centsUsed);
-                    
-                    // Stop timer and show cost
-                    clearInterval(timerInterval);
-                    showOverlayCost(canvas, centsUsed);
+                    await downloadAndDisplayVideo(videoId, canvas, drawGroup, centsUsed, timerInterval);
                     
                     console.log('[Sora] ✅ Video generation complete and displayed!');
                     
@@ -1474,12 +1590,18 @@ function attachButtonListeners(drawGroup) {
                 
             } catch (error) {
                 console.error('Error generating image:', error);
-                // Show error in the canvas
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'text-red-500 text-center p-4';
-                errorDiv.textContent = `Error: ${error.message}`;
-                canvas.innerHTML = '';
-                canvas.appendChild(errorDiv);
+                
+                // Check if this was a video failure with an ID
+                if (isVideoModel && lastFailedVideoId) {
+                    showRetryButton(canvas, lastFailedVideoId, lastFailedVideoParams);
+                } else {
+                    // Show regular error for image generation or video without retry option
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-red-500 text-center p-4';
+                    errorDiv.textContent = `Error: ${error.message}`;
+                    canvas.innerHTML = '';
+                    canvas.appendChild(errorDiv);
+                }
                 
                 // Clear timer on error
                 clearInterval(timerInterval);
