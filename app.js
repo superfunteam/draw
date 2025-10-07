@@ -30,17 +30,31 @@ function clearAuthState() {
 
 // Format large numbers (e.g., 1,250,000 -> "1.25m", 354,000 -> "354k")
 // FRONTEND DISPLAY ONLY - Database always stores/uses real integers
-function formatTokenCount(tokens) {
-    if (tokens >= 1000000) {
-        const millions = tokens / 1000000;
-        // Always show 2 decimals for millions (e.g., 1.37m, 2.00m)
-        return `${millions.toFixed(2)}m`;
-    } else if (tokens >= 1000) {
-        const thousands = tokens / 1000;
-        return thousands % 1 === 0 ? `${thousands}k` : `${thousands.toFixed(1).replace(/\.?0+$/, '')}k`;
+// Format cents as dollar amount (e.g., 1234 cents -> "$12.34")
+function formatDollarAmount(cents) {
+    const dollars = cents / 100;
+    return `$${dollars.toFixed(2)}`;
+}
+
+// Calculate video generation cost in cents
+function calculateVideoCost(model, duration, size) {
+    let costPerSecond;
+    
+    if (model === 'sora-2') {
+        costPerSecond = 11; // $0.11 per second = 11 cents
+    } else if (model === 'sora-2-pro') {
+        // Check if high resolution (1024p) or standard (720p)
+        if (size === '1792x1024' || size === '1024x1792') {
+            costPerSecond = 55; // $0.55 per second = 55 cents
+        } else {
+            costPerSecond = 33; // $0.33 per second = 33 cents
+        }
     } else {
-        return tokens.toString();
+        // For image models, return 0 (images are free for now or calculated differently)
+        return 0;
     }
+    
+    return costPerSecond * parseInt(duration);
 }
 
 // Update UI based on auth state
@@ -52,8 +66,8 @@ function updateAuthUI() {
         const authBtn = container.querySelector('.token-auth-btn');
         
         if (currentUser && currentUser.tokens !== undefined) {
-            // User is logged in - show formatted token count with icon in auth button
-            const formattedTokens = formatTokenCount(currentUser.tokens);
+            // User is logged in - show balance (tokens column now stores cents)
+            const formattedBalance = formatDollarAmount(currentUser.tokens);
             authBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
                     <path d="M21 6.375c0 2.692-4.03 4.875-9 4.875S3 9.067 3 6.375 7.03 1.5 12 1.5s9 2.183 9 4.875Z" />
@@ -61,10 +75,10 @@ function updateAuthUI() {
                     <path d="M12 16.5c2.685 0 5.19-.586 7.078-1.609a8.282 8.282 0 0 0 1.897-1.384c.016.121.025.244.025.368 0 2.692-4.03 4.875-9 4.875s-9-2.183-9-4.875c0-.124.009-.247.025-.368a8.284 8.284 0 0 0 1.897 1.384C6.809 15.914 9.315 16.5 12 16.5Z" />
                     <path d="M12 20.25c2.685 0 5.19-.586 7.078-1.609a8.282 8.282 0 0 0 1.897-1.384c.016.121.025.244.025.368 0 2.692-4.03 4.875-9 4.875s-9-2.183-9-4.875c0-.124.009-.247.025-.368a8.284 8.284 0 0 0 1.897 1.384C6.809 19.664 9.315 20.25 12 20.25Z" />
                 </svg>
-                ${formattedTokens}
+                ${formattedBalance}
             `;
             authBtn.onclick = () => {
-                alert(`You have ${currentUser.tokens.toLocaleString()} tokens remaining.`);
+                alert(`You have ${formatDollarAmount(currentUser.tokens)} remaining.`);
             };
             
             // Update buy button text to "Buy" when logged in with icon
@@ -161,16 +175,16 @@ async function loginWithAuthCode(authCode) {
     }
 }
 
-// Check if user has sufficient tokens, show modal if not
+// Check if user has sufficient balance, show modal if not
 function checkTokensBeforeDraw() {
     if (!currentUser) {
-        // Not logged in, show buy tokens modal
+        // Not logged in, show buy credits modal
         showModal('tokens-modal');
         return false;
     }
     
     if (currentUser.tokens <= 0) {
-        // No tokens left, show buy tokens modal
+        // No balance left, show buy credits modal
         showModal('tokens-modal');
         return false;
     }
@@ -181,12 +195,12 @@ function checkTokensBeforeDraw() {
 // Refresh token balance from database to ensure sync
 async function refreshTokensFromDB() {
     if (!currentUser || !currentUser.email) {
-        console.log('No user logged in, cannot refresh tokens');
+        console.log('No user logged in, cannot refresh balance');
         return false;
     }
     
     try {
-        console.log('Refreshing token balance from database...');
+        console.log('Refreshing balance from database...');
         const response = await fetch('/.netlify/functions/get-user-tokens', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,26 +210,26 @@ async function refreshTokensFromDB() {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            const previousTokens = currentUser.tokens;
-            currentUser.tokens = data.tokens;
+            const previousBalance = currentUser.tokens;
+            currentUser.tokens = data.tokens;  // tokens column now stores cents
             saveAuthState(currentUser);
             
-            if (previousTokens !== data.tokens) {
-                console.log(`Token balance synced: ${previousTokens} -> ${data.tokens}`);
+            if (previousBalance !== data.tokens) {
+                console.log(`Balance synced: ${formatDollarAmount(previousBalance)} -> ${formatDollarAmount(data.tokens)}`);
             }
             return true;
         } else {
-            console.error('Failed to refresh token balance:', data.error);
+            console.error('Failed to refresh balance:', data.error);
             return false;
         }
     } catch (error) {
-        console.error('Error refreshing tokens:', error);
+        console.error('Error refreshing balance:', error);
         return false;
     }
 }
 
-// Deduct tokens after successful API call
-async function deductTokens(tokensUsed) {
+// Deduct cents after successful API call
+async function deductTokens(centsUsed) {
     if (!currentUser || !currentUser.email) {
         return false;
     }
@@ -226,7 +240,7 @@ async function deductTokens(tokensUsed) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: currentUser.email,
-                tokensUsed
+                tokensUsed: centsUsed  // Keep parameter name for backwards compatibility
             })
         });
         
@@ -237,17 +251,17 @@ async function deductTokens(tokensUsed) {
             currentUser.tokens = data.newBalance;
             saveAuthState(currentUser); // This calls updateAuthUI() already
             
-            console.log(`Deducted ${tokensUsed} tokens. New balance: ${data.newBalance}`);
+            console.log(`Deducted ${formatDollarAmount(centsUsed)}. New balance: ${formatDollarAmount(data.newBalance)}`);
             return true;
         } else {
-            console.error('Failed to deduct tokens:', data.error);
-            // Refresh tokens from database if deduction failed (may be stale data)
+            console.error('Failed to deduct balance:', data.error);
+            // Refresh balance from database if deduction failed (may be stale data)
             setTimeout(() => refreshTokensFromDB(), 500);
             return false;
         }
     } catch (error) {
-        console.error('Token deduction error:', error);
-        // Refresh tokens from database if network error (may be out of sync)
+        console.error('Balance deduction error:', error);
+        // Refresh balance from database if network error (may be out of sync)
         setTimeout(() => refreshTokensFromDB(), 500);
         return false;
     }
@@ -377,6 +391,171 @@ document.addEventListener('keydown', (e) => {
 // Store the template draw group
 let drawGroupTemplate = null;
 
+// Helper function to convert data URL to Blob
+function dataURLtoBlob(dataURL) {
+    const parts = dataURL.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    const n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+// Helper function to resize image to exact dimensions
+async function resizeImageToSize(dataURL, targetWidth, targetHeight) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            // Create canvas with target dimensions
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw image scaled to fill canvas (may crop)
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+            
+            // Convert canvas to blob
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    console.log(`[Sora] Resized image from ${img.width}x${img.height} to ${targetWidth}x${targetHeight}`);
+                    resolve(blob);
+                } else {
+                    reject(new Error('Failed to create blob from canvas'));
+                }
+            }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = dataURL;
+    });
+}
+
+// Update quality dropdown when model changes
+const modelSelect = document.getElementById('model');
+if (modelSelect) {
+    modelSelect.addEventListener('change', (e) => {
+        const qualitySelect = document.getElementById('quality');
+        const ratioSelect = document.getElementById('ratio');
+        const isVideoModel = e.target.value === 'sora-2';
+        
+        if (qualitySelect) {
+            // Store current selection if possible
+            const currentValue = qualitySelect.value.toLowerCase();
+            
+            // Clear and repopulate quality options
+            qualitySelect.innerHTML = '';
+            
+            if (isVideoModel) {
+                // Video quality options
+                const soraOption = document.createElement('option');
+                soraOption.value = 'sora-2';
+                soraOption.textContent = 'Sora 2 (Fast)';
+                soraOption.selected = true;
+                qualitySelect.appendChild(soraOption);
+                
+                const soraProOption = document.createElement('option');
+                soraProOption.value = 'sora-2-pro';
+                soraProOption.textContent = 'Sora 2 Pro (High Quality)';
+                qualitySelect.appendChild(soraProOption);
+            } else {
+                // Image quality options
+                const autoOption = document.createElement('option');
+                autoOption.value = 'Auto';
+                autoOption.textContent = 'Auto';
+                qualitySelect.appendChild(autoOption);
+                
+                const lowOption = document.createElement('option');
+                lowOption.value = 'Low';
+                lowOption.textContent = 'Low';
+                lowOption.selected = true;
+                qualitySelect.appendChild(lowOption);
+                
+                const mediumOption = document.createElement('option');
+                mediumOption.value = 'Medium';
+                mediumOption.textContent = 'Medium';
+                qualitySelect.appendChild(mediumOption);
+                
+                const highOption = document.createElement('option');
+                highOption.value = 'High';
+                highOption.textContent = 'High';
+                qualitySelect.appendChild(highOption);
+            }
+        }
+        
+        // Update ratio label text for clarity
+        if (ratioSelect) {
+            const ratioLabel = document.querySelector('label[for="ratio"]');
+            if (ratioLabel) {
+                if (isVideoModel) {
+                    ratioLabel.textContent = 'Aspect Ratio (Video)';
+                } else {
+                    ratioLabel.textContent = 'Aspect Ratio';
+                }
+            }
+        }
+        
+        // Show/hide duration dropdown based on video model
+        const durationContainer = document.getElementById('duration-container');
+        const settingsGrid = document.getElementById('settings-grid');
+        if (durationContainer) {
+            if (isVideoModel) {
+                durationContainer.classList.remove('hidden');
+                // Switch to 7-column grid (7 fields visible)
+                if (settingsGrid) {
+                    settingsGrid.classList.remove('md:grid-cols-6');
+                    settingsGrid.classList.add('md:grid-cols-7');
+                }
+            } else {
+                durationContainer.classList.add('hidden');
+                // Switch back to 6-column grid (6 fields visible)
+                if (settingsGrid) {
+                    settingsGrid.classList.remove('md:grid-cols-7');
+                    settingsGrid.classList.add('md:grid-cols-6');
+                }
+            }
+        }
+        
+        console.log(`Model changed to: ${e.target.value}, Video mode: ${isVideoModel}`);
+    });
+}
+
+// Handle preset changes - auto-configure settings for Video preset
+const presetSelect = document.getElementById('preset');
+if (presetSelect) {
+    presetSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'Video') {
+            console.log('[Preset] Video preset selected - auto-configuring settings');
+            
+            // Change model to sora-2
+            const modelSelect = document.getElementById('model');
+            if (modelSelect) {
+                modelSelect.value = 'sora-2';
+                // Trigger change event to update quality dropdown
+                modelSelect.dispatchEvent(new Event('change'));
+            }
+            
+            // Change ratio to Landscape
+            const ratioSelect = document.getElementById('ratio');
+            if (ratioSelect) {
+                ratioSelect.value = 'Landscape (wide)';
+            }
+            
+            // Change quality to sora-2-pro (after model change populates options)
+            setTimeout(() => {
+                const qualitySelect = document.getElementById('quality');
+                if (qualitySelect) {
+                    qualitySelect.value = 'sora-2-pro';
+                }
+            }, 100);
+            
+            console.log('[Preset] Video settings applied: model=sora-2, ratio=Landscape, quality=sora-2-pro');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const firstDrawGroup = document.querySelector('.draw-group');
     if (firstDrawGroup) {
@@ -388,9 +567,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const canvas = drawGroupTemplate.querySelector('.canvas');
         if (canvas) {
             canvas.id = ''; // Reset canvas ID
-            // Clear any existing image and show empty/loader state
+            // Clear any existing media (image or video) and show empty/loader state
             const existingApiImg = canvas.querySelector('img.api-image');
+            const existingApiVideo = canvas.querySelector('video.api-video');
             if (existingApiImg) existingApiImg.remove();
+            if (existingApiVideo) existingApiVideo.remove();
             const errorDiv = canvas.querySelector('.text-red-500'); // Remove potential error message
             if (errorDiv) errorDiv.remove();
             
@@ -645,22 +826,49 @@ function attachButtonListeners(drawGroup) {
             const loader = canvas.querySelector('.loader');
             const svgIcon = newDrawButton.querySelector('svg');
             
-            // Get quality setting
+            // Get model selection
+            const modelSelect = document.getElementById('model');
+            const selectedModel = modelSelect ? modelSelect.value : 'gpt-image-1';
+            const isVideoModel = selectedModel === 'sora-2';
+            console.log('Using model:', selectedModel, '| Is video:', isVideoModel);
+            
+            // Get quality setting (adjusted for video models)
             const qualitySelect = document.getElementById('quality');
             let qualityValue = 'low'; // Default value
             if (qualitySelect) {
                 const selectedQuality = qualitySelect.value.toLowerCase();
+                if (isVideoModel) {
+                    // For Sora models, use sora-2 or sora-2-pro
+                    const validVideoQualities = ['sora-2', 'sora-2-pro'];
+                    qualityValue = validVideoQualities.includes(selectedQuality) ? selectedQuality : 'sora-2';
+                } else {
+                    // For image models, use standard qualities
                 const validQualities = ['low', 'medium', 'high', 'auto'];
-                if (validQualities.includes(selectedQuality)) {
-                    qualityValue = selectedQuality;
+                    qualityValue = validQualities.includes(selectedQuality) ? selectedQuality : 'low';
                 }
             }
             console.log('Using quality setting:', qualityValue);
 
-            // Get aspect ratio
+            // Get aspect ratio (adjusted for video models)
             const ratioSelect = document.getElementById('ratio');
-            let imageSize = "1024x1536"; // Default portrait
+            let imageSize = "1024x1536"; // Default portrait for images
             if (ratioSelect) {
+                if (isVideoModel) {
+                    // Video aspect ratios
+                    switch (ratioSelect.value) {
+                        case "Square":
+                            imageSize = "720x720";
+                            break;
+                        case "Landscape (wide)":
+                            imageSize = "1280x720";
+                            break;
+                        case "Portrait (tall)":
+                        default:
+                            imageSize = "720x1280";
+                            break;
+                    }
+                } else {
+                    // Image aspect ratios
                 switch (ratioSelect.value) {
                     case "Square":
                         imageSize = "1024x1024";
@@ -674,7 +882,8 @@ function attachButtonListeners(drawGroup) {
                         break;
                 }
             }
-            console.log('Using image size:', imageSize);
+            }
+            console.log('Using size:', imageSize);
             
             // Get preset and define prompt rules
             const presetSelect = document.getElementById('preset');
@@ -690,6 +899,9 @@ function attachButtonListeners(drawGroup) {
                     case "Sketches":
                         promptPrefix = "Create a figure drawing sketch that serves as a helpful drawing tool for artists. Use single color (black and white only) with clear lines that show character shapes, including balls at joints, circles in faces, and motion drawing style. Focus on the pose and movement described in the prompt. Here is the scene to draw:";
                         break;
+                    case "Video":
+                        promptPrefix = ""; // No prefix - use exact user text
+                        break;
                     case "None":
                         promptPrefix = "Create an image exactly in the style as prompted:";
                         break;
@@ -700,10 +912,14 @@ function attachButtonListeners(drawGroup) {
                 }
             }
             
-            // Hide any existing API-generated image (but not the loader image)
+            // Hide any existing API-generated media (image or video)
             const existingApiImg = canvas.querySelector('img:not(.loader img)');
+            const existingApiVideo = canvas.querySelector('video');
             if (existingApiImg) {
                 existingApiImg.remove();
+            }
+            if (existingApiVideo) {
+                existingApiVideo.remove();
             }
             
             // Hide empty message and show loader
@@ -712,15 +928,248 @@ function attachButtonListeners(drawGroup) {
             
             // Get the prompt text
             const prompt = textarea.value.trim() || 'Hello World';
-            console.log('Generating image for prompt:', prompt);
+            console.log('Generating for prompt:', prompt);
             
             // Disable button and show loading state
             newDrawButton.disabled = true;
             const originalText = newDrawButton.querySelector('span').textContent;
-            newDrawButton.querySelector('span').textContent = 'Drawing...';
+            newDrawButton.querySelector('span').textContent = isVideoModel ? 'Creating video...' : 'Drawing...';
             svgIcon.classList.add('animate-pulse');
             
             try {
+                
+                // === VIDEO GENERATION WORKFLOW ===
+                if (isVideoModel) {
+                    console.log('Starting Sora 2 video generation...');
+                    
+                    // Collect reference images (Sora only uses the first one as the opening frame)
+                    const imageElements = drawGroup.querySelectorAll('.prompt-image-preview');
+                    let referenceImageBlob = null;
+                    let referenceImageCount = 0;
+
+                    // Parse video dimensions from imageSize (e.g., "720x1280" -> width: 720, height: 1280)
+                    const [videoWidth, videoHeight] = imageSize.split('x').map(Number);
+
+                    for (let i = 0; i < imageElements.length; i++) {
+                        const imageEl = imageElements[i];
+                        const pastedImageURL = imageEl?.dataset?.pastedImageUrl;
+                        
+                        if (pastedImageURL && pastedImageURL.startsWith("data:image/")) {
+                            referenceImageCount++;
+                            
+                            // Only use first image for Sora (becomes the first frame)
+                            if (i === 0) {
+                                try {
+                                    console.log('[Sora] Using reference image 1 as first frame of video');
+                                    console.log(`[Sora] Resizing reference image to match video size: ${videoWidth}x${videoHeight}`);
+                                    
+                                    // Resize image to match video dimensions exactly
+                                    referenceImageBlob = await resizeImageToSize(pastedImageURL, videoWidth, videoHeight);
+                                } catch (error) {
+                                    console.error('[Sora] Failed to process reference image:', error);
+                                }
+                            }
+                        }
+                    }
+
+                    if (referenceImageCount > 1) {
+                        console.warn(`[Sora] Found ${referenceImageCount} reference images. Sora only uses the first image as the opening frame.`);
+                    }
+                    
+                    // Create FormData for multipart/form-data request
+                    const formData = new FormData();
+                    
+                    // Build final prompt - if promptPrefix is empty, use just the prompt
+                    const finalPrompt = promptPrefix ? `${promptPrefix} ${prompt}` : prompt;
+                    formData.append('prompt', finalPrompt);
+                    formData.append('model', qualityValue); // qualityValue is either 'sora-2' or 'sora-2-pro'
+                    formData.append('size', imageSize);
+                    
+                    // Get duration from dropdown
+                    const durationSelect = document.getElementById('duration');
+                    const duration = durationSelect ? durationSelect.value : '4';
+                    formData.append('seconds', duration); // Valid values: 4, 8, 12
+                    
+                    // Add reference image if available
+                    if (referenceImageBlob) {
+                        formData.append('input_reference', referenceImageBlob, 'reference.png');
+                        console.log('[Sora] Reference image attached to request');
+                    }
+                    
+                    console.log('Video generation request:', {
+                        prompt: finalPrompt,
+                        model: qualityValue,
+                        size: imageSize,
+                        seconds: duration,
+                        hasReferenceImage: !!referenceImageBlob
+                    });
+                    
+                    // Step 1: Start video generation
+                    const createResponse = await fetch('https://api.openai.com/v1/videos', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                    },
+                        body: formData
+                    });
+                    
+                    if (!createResponse.ok) {
+                        const errorText = await createResponse.text();
+                        console.error('Video creation failed:', errorText);
+                        throw new Error(`Failed to start video generation: ${errorText}`);
+                    }
+                    
+                    const videoJob = await createResponse.json();
+                    console.log('Video job created:', videoJob);
+                    
+                    const videoId = videoJob.id;
+                    
+                    // Step 2: Poll for completion
+                    let videoStatus = videoJob.status;
+                    let pollCount = 0;
+                    const maxPolls = 120; // 10 minutes max (120 * 5 seconds)
+                    let finalStatusData = videoJob;
+                    let stuckAt100Count = 0;
+                    const maxStuckAt100 = 3; // If stuck at 100% for 3 polls (15 seconds), try to download
+                    
+                    while ((videoStatus === 'queued' || videoStatus === 'in_progress') && pollCount < maxPolls) {
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                        pollCount++;
+                        
+                        console.log(`[Sora Poll ${pollCount}/${maxPolls}] Checking video status...`);
+                        
+                        const statusResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                            }
+                        });
+                        
+                        if (!statusResponse.ok) {
+                            const errorText = await statusResponse.text();
+                            console.error('Status check failed:', statusResponse.status, errorText);
+                            throw new Error('Failed to check video status');
+                        }
+                        
+                        finalStatusData = await statusResponse.json();
+                        videoStatus = finalStatusData.status;
+                        const progress = finalStatusData.progress || 0;
+                        
+                        console.log(`[Sora Poll ${pollCount}] Status: ${videoStatus}, Progress: ${progress}%`);
+                        console.log('[Sora Poll] Full response:', JSON.stringify(finalStatusData, null, 2));
+                        
+                        newDrawButton.querySelector('span').textContent = `Creating video... ${progress}%`;
+                        
+                        // Check if we're stuck at 100% progress
+                        if (progress === 100 && videoStatus === 'in_progress') {
+                            stuckAt100Count++;
+                            console.log(`[Sora Poll] At 100% but still in_progress (${stuckAt100Count}/${maxStuckAt100})...`);
+                            
+                            // If stuck at 100% for several polls, try to download anyway
+                            if (stuckAt100Count >= maxStuckAt100) {
+                                console.log('[Sora Poll] Stuck at 100% for too long, attempting early download...');
+                                // Try to fetch the video - if it's ready, it will work
+                                // If not, we'll continue polling
+                                try {
+                                    const testDownloadResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
+                                        method: 'HEAD', // Just check if it's available
+                                        headers: {
+                                            'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                                        }
+                                    });
+                                    
+                                    if (testDownloadResponse.ok) {
+                                        console.log('[Sora Poll] Video is available for download! Breaking out of polling loop.');
+                                        videoStatus = 'completed'; // Force completion
+                                        break;
+                                    } else {
+                                        console.log('[Sora Poll] Video not yet available, continuing to poll...');
+                                        stuckAt100Count = 0; // Reset counter and keep trying
+                                    }
+                                } catch (testError) {
+                                    console.log('[Sora Poll] Download test failed, continuing to poll...', testError.message);
+                                    stuckAt100Count = 0; // Reset counter
+                                }
+                            }
+                        } else {
+                            stuckAt100Count = 0; // Reset if not at 100%
+                        }
+                    }
+                    
+                    console.log('[Sora] Polling complete. Final status:', videoStatus);
+                    console.log('[Sora] Final status data:', JSON.stringify(finalStatusData, null, 2));
+                    
+                    if (videoStatus === 'failed') {
+                        const errorMessage = finalStatusData.error?.message || 'Video generation failed';
+                        console.error('[Sora] Generation failed:', errorMessage);
+                        throw new Error(errorMessage);
+                    }
+                    
+                    if (videoStatus !== 'completed') {
+                        console.warn('[Sora] Video generation timed out or incomplete. Final status:', videoStatus);
+                        throw new Error(`Video generation incomplete. Status: ${videoStatus}`);
+                    }
+                    
+                    // Check for usage/credits information
+                    if (finalStatusData.usage) {
+                        console.log('[Sora] Usage data:', finalStatusData.usage);
+                    } else {
+                        console.log('[Sora] No usage data in response');
+                    }
+                    
+                    // Step 3: Download the video
+                    console.log('[Sora] Video completed! Downloading...');
+                    newDrawButton.querySelector('span').textContent = 'Downloading video...';
+                    
+                    const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
+                        headers: {
+                            'Authorization': `Bearer ${window.OPENAI_API_KEY}`
+                        }
+                    });
+                    
+                    if (!videoResponse.ok) {
+                        const errorText = await videoResponse.text();
+                        console.error('[Sora] Download failed:', videoResponse.status, errorText);
+                        throw new Error('Failed to download video');
+                    }
+                    
+                    const videoBlob = await videoResponse.blob();
+                    const videoUrl = URL.createObjectURL(videoBlob);
+                    
+                    console.log('[Sora] Video downloaded successfully!');
+                    console.log('[Sora] Video size:', (videoBlob.size / 1024 / 1024).toFixed(2), 'MB');
+                    console.log('[Sora] Video type:', videoBlob.type);
+                    
+                    // Step 4: Display video in canvas
+                    const videoElement = document.createElement('video');
+                    videoElement.src = videoUrl;
+                    videoElement.controls = true;
+                    videoElement.autoplay = true;
+                    videoElement.loop = true;
+                    videoElement.classList.add('api-video', 'w-full', 'h-full', 'object-contain');
+                    videoElement.style.maxHeight = '100%';
+                    
+                    // Store the blob URL for download/copy operations
+                    videoElement.dataset.videoBlobUrl = videoUrl;
+                    
+                    // Hide loader and add video to canvas
+                    loader.classList.add('hidden');
+                    canvas.appendChild(videoElement);
+                    
+                    // Show image actions (copy/download buttons)
+                    const imageActions = drawGroup.querySelector('.image-actions');
+                    if (imageActions) {
+                        imageActions.classList.remove('hidden');
+                    }
+                    
+                    // Deduct cents for video generation based on actual parameters
+                    const centsUsed = calculateVideoCost(qualityValue, duration, imageSize);
+                    console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for ${duration}s ${qualityValue} video at ${imageSize}`);
+                    await deductTokens(centsUsed);
+                    
+                    console.log('[Sora] ✅ Video generation complete and displayed!');
+                    
+                } else {
+                    // === IMAGE GENERATION WORKFLOW (existing code) ===
                 
                 // Collect all reference images from the current draw group
                 const imageElements = drawGroup.querySelectorAll('.prompt-image-preview');
@@ -842,7 +1291,7 @@ function attachButtonListeners(drawGroup) {
                     }
                 } else {
                     // Handle /images/generations endpoint format
-                    if (data.data && data.data[0] && data.data[0].b64_json) {
+                if (data.data && data.data[0] && data.data[0].b64_json) {
                         imageData = data.data[0].b64_json;
                     } else if (data.data && data.data[0] && data.data[0].url) {
                         imageData = data.data[0].url;
@@ -893,6 +1342,9 @@ function attachButtonListeners(drawGroup) {
                 } else {
                     throw new Error('No image data received from API');
                 }
+                
+                } // End of image generation else block
+                
             } catch (error) {
                 console.error('Error generating image:', error);
                 // Show error in the canvas
@@ -1011,7 +1463,25 @@ function attachButtonListeners(drawGroup) {
                 }, 150);
 
                 const apiImage = drawGroup.querySelector('img.api-image');
-                if (apiImage && apiImage.src) {
+                const apiVideo = drawGroup.querySelector('video.api-video');
+                
+                if (apiVideo && apiVideo.src) {
+                    // Copy video to clipboard
+                    try {
+                        const response = await fetch(apiVideo.src);
+                        const blob = await response.blob();
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                [blob.type]: blob
+                            })
+                        ]);
+                        console.log('Video copied to clipboard!');
+                    } catch (err) {
+                        console.error('Failed to copy video: ', err);
+                        alert('Failed to copy video. See console for details.');
+                    }
+                } else if (apiImage && apiImage.src) {
+                    // Copy image to clipboard
                     try {
                         const response = await fetch(apiImage.src);
                         const blob = await response.blob();
@@ -1026,8 +1496,8 @@ function attachButtonListeners(drawGroup) {
                         alert('Failed to copy image. See console for details.');
                     }
                 } else {
-                    console.warn('No API image found to copy in this draw group.');
-                    alert('No image to copy.');
+                    console.warn('No API image or video found to copy in this draw group.');
+                    alert('No media to copy.');
                 }
             });
         }
@@ -1041,27 +1511,39 @@ function attachButtonListeners(drawGroup) {
                 }, 150);
 
                 const apiImage = drawGroup.querySelector('img.api-image');
+                const apiVideo = drawGroup.querySelector('video.api-video');
                 const promptTextarea = drawGroup.querySelector('textarea');
-                let filename = 'superfun-image.png';
+                
+                let filename = 'superfun-media';
                 if (promptTextarea && promptTextarea.value.trim()) {
                     // Create a slug from the first few words of the prompt
                     const slug = promptTextarea.value.trim().toLowerCase().split(/\\s+/).slice(0, 5).join('-').replace(/[^a-z0-9-]/g, '');
                     if (slug) {
-                        filename = `${slug}.png`;
+                        filename = slug;
                     }
                 }
 
-                if (apiImage && apiImage.src) {
+                if (apiVideo && apiVideo.src) {
+                    // Download video
+                    const link = document.createElement('a');
+                    link.href = apiVideo.src;
+                    link.download = `${filename}.mp4`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log('Video download initiated.');
+                } else if (apiImage && apiImage.src) {
+                    // Download image
                     const link = document.createElement('a');
                     link.href = apiImage.src;
-                    link.download = filename;
+                    link.download = `${filename}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                     console.log('Image download initiated.');
                 } else {
-                    console.warn('No API image found to download in this draw group.');
-                    alert('No image to download.');
+                    console.warn('No API image or video found to download in this draw group.');
+                    alert('No media to download.');
                 }
             });
         }
@@ -1072,7 +1554,7 @@ function attachButtonListeners(drawGroup) {
 function createDrawGroup(index) {
     if (!drawGroupTemplate) {
         console.error('Draw group template is not available. Cannot create new group.');
-        return null;
+            return null;
     }
     
     // Clone the template
@@ -1082,7 +1564,7 @@ function createDrawGroup(index) {
     newGroup.id = `draw-group-${index}`;
     const canvas = newGroup.querySelector('.canvas');
     if (canvas) {
-        canvas.id = `canvas-${index}`;
+    canvas.id = `canvas-${index}`;
         // Ensure canvas is in default empty state for the clone
         const existingApiImg = canvas.querySelector('img.api-image');
         if (existingApiImg) existingApiImg.remove();
@@ -1097,7 +1579,7 @@ function createDrawGroup(index) {
     // Reset textarea value for the clone (double-check, template should be clean)
     const textarea = newGroup.querySelector('textarea');
     if (textarea) {
-        textarea.value = '';
+    textarea.value = '';
     }
 
     // Ensure image-actions are hidden for the clone
@@ -1453,16 +1935,16 @@ function openLightbox(imageElement, imageType = 'api') {
     currentLightboxType = imageType;
     
     if (imageType === 'api') {
-        galleryApiImages = Array.from(document.querySelectorAll('.api-image'));
-        const clickedImageSrc = imageElement.src;
-        currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
-        
-        if (currentLightboxImageIndex === -1) { 
-            console.error("Clicked image not found in galleryApiImages");
-            return;
-        }
-        
-        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+    galleryApiImages = Array.from(document.querySelectorAll('.api-image'));
+    const clickedImageSrc = imageElement.src;
+    currentLightboxImageIndex = galleryApiImages.findIndex(img => img.src === clickedImageSrc);
+
+    if (currentLightboxImageIndex === -1) { 
+        console.error("Clicked image not found in galleryApiImages");
+        return;
+    }
+
+    lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
         currentPromptImageElement = null;
     } else if (imageType === 'prompt') {
         // For prompt images, we need to get the background image
@@ -1505,7 +1987,7 @@ function showNextImage() {
     if (currentLightboxImageIndex < currentGallery.length - 1) {
         currentLightboxImageIndex++;
         if (currentLightboxType === 'api') {
-            lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
             currentPromptImageElement = null;
         } else {
             lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
@@ -1520,7 +2002,7 @@ function showPrevImage() {
     if (currentLightboxImageIndex > 0) {
         currentLightboxImageIndex--;
         if (currentLightboxType === 'api') {
-            lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
+        lightboxImage.src = galleryApiImages[currentLightboxImageIndex].src;
             currentPromptImageElement = null;
         } else {
             lightboxImage.src = galleryPromptImages[currentLightboxImageIndex].dataset.pastedImageUrl;
@@ -1808,7 +2290,7 @@ function handleImageFile(imageFile, targetPreviewDiv, drawGroup, slotNumber) {
         }
     };
     reader.readAsDataURL(imageFile);
-}
+} 
 
 // Modal animation helper functions
 function showModal(modalId) {

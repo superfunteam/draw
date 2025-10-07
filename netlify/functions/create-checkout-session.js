@@ -17,22 +17,22 @@ const getBaseUrl = () => {
     return process.env.URL || 'http://localhost:8888';
 };
 
-// Token package pricing
+// Credit package pricing
 const PRICING = {
     micro: {
-        tokens: 50000,
-        price: 500, // $5.00 in cents
-        name: 'Micro - 50k tokens'
+        cents: 1000,     // $10.00 credit
+        price: 1000,     // $10.00 charge
+        name: 'Micro - $10 credit'
     },
     tinker: {
-        tokens: 150000,
-        price: 1000, // $10.00 in cents
-        name: 'Tinker - 150k tokens (Save 33%)'
+        cents: 2500,     // $25.00 credit
+        price: 2500,     // $25.00 charge
+        name: 'Tinker - $25 credit'
     },
     pro: {
-        tokens: 500000,
-        price: 2500, // $25.00 in cents
-        name: 'Pro - 500k tokens (Save 50%)'
+        cents: 10000,    // $100.00 credit
+        price: 7500,     // $75.00 charge
+        name: 'Pro - $100 credit (Save 25%!)'
     }
 };
 
@@ -79,7 +79,7 @@ exports.handler = async (event) => {
                     currency: 'usd',
                     product_data: {
                         name: package.name,
-                        description: `${package.tokens} tokens for Superfun Draw`
+                        description: `$${(package.cents/100).toFixed(2)} credit for Superfun Draw`
                     },
                     unit_amount: package.price,
                 },
@@ -92,7 +92,7 @@ exports.handler = async (event) => {
             metadata: {
                 email: email,
                 plan: plan,
-                tokens: package.tokens
+                cents: package.cents
             }
         });
 

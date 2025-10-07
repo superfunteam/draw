@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS users (
   email TEXT PRIMARY KEY,
-  tokens INTEGER NOT NULL DEFAULT 0,
+  tokens INTEGER NOT NULL DEFAULT 0,  -- Now stores balance in cents (e.g., 1000 = $10.00)
   auth_code TEXT UNIQUE,
   auth_code_used BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

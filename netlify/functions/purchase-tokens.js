@@ -104,22 +104,22 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Map pricing plans to token amounts
-    const tokenAmounts = {
-      'micro': 50000,
-      'tinker': 150000,
-      'pro': 500000
+    // Map pricing plans to credit amounts (in cents)
+    const creditAmounts = {
+      'micro': 1000,    // $10.00
+      'tinker': 2500,   // $25.00
+      'pro': 10000      // $100.00 (pay $75, get $100)
     };
 
-    const tokens = tokenAmounts[plan];
-    if (!tokens) {
+    const cents = creditAmounts[plan];
+    if (!cents) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Invalid plan selected' })
       };
     }
 
-    // ALWAYS check database first for current token balance (single source of truth)
+    // ALWAYS check database first for current balance (single source of truth)
     console.log('DEBUG: Purchase - Looking up email in database:', email.toLowerCase());
     const existingUser = await findUserByEmail(email);
     console.log('DEBUG: Purchase - Found existing user:', existingUser);
@@ -127,32 +127,32 @@ exports.handler = async function(event, context) {
     // Determine if user is logged in (has currentTokens passed from client)
     const isLoggedInUser = currentTokens !== undefined && currentTokens !== null;
     
-    let previousTokens;
+    let previousCents;
     if (existingUser) {
       // User exists in database - ALWAYS use database value as source of truth
-      previousTokens = existingUser.tokens;
-      console.log(`🔍 DATABASE BALANCE: Using DB balance ${previousTokens} for ${email} (client sent: ${currentTokens})`);
+      previousCents = existingUser.tokens;  // Column name is still 'tokens' but stores cents
+      console.log(`🔍 DATABASE BALANCE: Using DB balance ${previousCents} cents ($${(previousCents/100).toFixed(2)}) for ${email} (client sent: ${currentTokens})`);
       
       // Warn if client and database values don't match
       if (isLoggedInUser && currentTokens !== existingUser.tokens) {
-        console.log(`⚠️ TOKEN MISMATCH: Client has ${currentTokens}, DB has ${existingUser.tokens} - using DB value`);
+        console.log(`⚠️ BALANCE MISMATCH: Client has ${currentTokens}, DB has ${existingUser.tokens} - using DB value`);
       }
     } else {
       // New user - start with 0
-      previousTokens = 0;
-      console.log(`🆕 NEW USER: Starting with 0 tokens for ${email}`);
+      previousCents = 0;
+      console.log(`🆕 NEW USER: Starting with $0.00 for ${email}`);
     }
     
-    const newTotalTokens = previousTokens + tokens;
-    console.log(`💰 TOKEN CALCULATION: ${previousTokens} + ${tokens} = ${newTotalTokens}`);
+    const newTotalCents = previousCents + cents;
+    console.log(`💰 CREDIT CALCULATION: ${previousCents} cents + ${cents} cents = ${newTotalCents} cents ($${(newTotalCents/100).toFixed(2)})`);
     
-    // Generate auth code with embedded token data (solves serverless persistence issue)
-    const authCode = generateAuthCodeWithTokens(email, newTotalTokens);
+    // Generate auth code with embedded balance data (solves serverless persistence issue)
+    const authCode = generateAuthCodeWithTokens(email, newTotalCents);
     
-    console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: ${tokens}, Previous: ${previousTokens}, New Total: ${newTotalTokens}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
+    console.log(`Purchase: ${email}, Plan: ${plan}, Purchased: $${(cents/100).toFixed(2)}, Previous: $${(previousCents/100).toFixed(2)}, New Total: $${(newTotalCents/100).toFixed(2)}, Is Logged In: ${isLoggedInUser}, Existing User: ${!!existingUser}`);
     
     // Save/update user in database
-    const savedUser = await saveUser(email, newTotalTokens, authCode);
+    const savedUser = await saveUser(email, newTotalCents, authCode);
     console.log('DEBUG: Purchase - Saved user to database:', savedUser);
 
     // Send email directly (not via another function)
@@ -179,29 +179,29 @@ exports.handler = async function(event, context) {
       const emailContent = isLoggedInUser ? `
 Hi there!
 
-Great news! Your token purchase has been processed and added to your account.
+Great news! Your credit purchase has been processed and added to your account.
 
-🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
-🪙 Tokens Purchased: ${tokens.toLocaleString()}
-💰 Previous Balance: ${previousTokens.toLocaleString()}
-🎉 New Total Balance: ${newTotalTokens.toLocaleString()}
+🎨 Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+💵 Credits Added: $${(cents/100).toFixed(2)}
+💰 Previous Balance: $${(previousCents/100).toFixed(2)}
+🎉 New Total Balance: $${(newTotalCents/100).toFixed(2)}
 
-Your tokens have been automatically added to your account. You can start using them right away!
+Your credits have been automatically added to your account. You can start using them right away!
 
 Happy drawing!
 - The Superfun Draw Team
       `.trim() : existingUser ? `
 Hi there!
 
-Great news! Your token purchase has been processed and added to your account.
+Great news! Your credit purchase has been processed and added to your account.
 
-🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
-🪙 Tokens Purchased: ${tokens.toLocaleString()}
-💰 Previous Balance: ${previousTokens.toLocaleString()}
-🎉 New Total Balance: ${newTotalTokens.toLocaleString()}
+🎨 Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+💵 Credits Added: $${(cents/100).toFixed(2)}
+💰 Previous Balance: $${(previousCents/100).toFixed(2)}
+🎉 New Total Balance: $${(newTotalCents/100).toFixed(2)}
 🔑 One-time login code: ${authCode}
 
-Click here to log in and access your tokens:
+Click here to log in and access your credits:
 ${loginUrl}
 
 Or visit the site and use your 8-digit code: ${authCode}
@@ -209,14 +209,14 @@ Or visit the site and use your 8-digit code: ${authCode}
 Happy drawing!
 - The Superfun Draw Team
 
-P.S. This code can only be used once. You'll get a new one if you purchase more tokens.
+P.S. This code can only be used once. You'll get a new one if you purchase more credits.
       `.trim() : `
 Hi there!
 
-Welcome to Superfun Draw! Thanks for your first token purchase.
+Welcome to Superfun Draw! Thanks for your first credit purchase.
 
-🎨 Token Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
-🪙 Welcome tokens: ${newTotalTokens.toLocaleString()}
+🎨 Plan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}
+💵 Welcome Credits: $${(newTotalCents/100).toFixed(2)}
 🔑 One-time login code: ${authCode}
 
 Click here to log in and start creating:
@@ -227,7 +227,7 @@ Or visit the site and use your 8-digit code: ${authCode}
 Happy drawing!
 - The Superfun Draw Team
 
-P.S. This code can only be used once. You'll get a new one if you purchase more tokens.
+P.S. This code can only be used once. You'll get a new one if you purchase more credits.
       `.trim();
 
       console.log('Sending email via Mailjet...');
@@ -249,10 +249,10 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
                 }
               ],
               Subject: isLoggedInUser ? 
-                `Tokens added to your account! (${newTotalTokens.toLocaleString()} total)` :
+                `Credits added to your account! ($${(newTotalCents/100).toFixed(2)} total)` :
                 existingUser ?
-                `More tokens added! (${newTotalTokens.toLocaleString()} total)` :
-                `Welcome to Superfun Draw! (${newTotalTokens.toLocaleString()} tokens)`,
+                `More credits added! ($${(newTotalCents/100).toFixed(2)} total)` :
+                `Welcome to Superfun Draw! ($${(newTotalCents/100).toFixed(2)} credits)`,
               TextPart: emailContent
             }
           ]
@@ -273,10 +273,10 @@ P.S. This code can only be used once. You'll get a new one if you purchase more 
       body: JSON.stringify({
         success: true,
         message: isLoggedInUser ? 
-          `Tokens added! You now have ${newTotalTokens.toLocaleString()} tokens total.` :
+          `Credits added! You now have $${(newTotalCents/100).toFixed(2)} total.` :
           'Check your email for login instructions!',
-        tokensPurchased: tokens,
-        newTotalTokens: newTotalTokens,
+        creditsPurchased: cents,
+        newTotalCents: newTotalCents,
         isLoggedInUser: isLoggedInUser,
         email
       })

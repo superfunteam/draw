@@ -60,10 +60,10 @@ exports.handler = async (event) => {
         
         try {
             // Extract metadata
-            const { email, plan, tokens } = session.metadata;
-            const tokensToAdd = parseInt(tokens);
+            const { email, plan, cents } = session.metadata;
+            const centsToAdd = parseInt(cents);
             
-            console.log(`Processing payment for ${email}, plan: ${plan}, tokens: ${tokensToAdd}`);
+            console.log(`Processing payment for ${email}, plan: ${plan}, cents: ${centsToAdd} ($${(centsToAdd/100).toFixed(2)})`);
             
             // Connect to database
             const sql = neon(process.env.DATABASE_URL);
@@ -73,31 +73,31 @@ exports.handler = async (event) => {
                 SELECT email, tokens FROM users WHERE email = ${email}
             `;
             
-            let newTotalTokens, isNewUser;
+            let newTotalCents, isNewUser;
             
             if (existingUser.length > 0) {
-                // Existing user - add tokens
-                const currentTokens = existingUser[0].tokens || 0;
-                newTotalTokens = currentTokens + tokensToAdd;
+                // Existing user - add cents
+                const currentCents = existingUser[0].tokens || 0;  // Column still named 'tokens' but stores cents
+                newTotalCents = currentCents + centsToAdd;
                 
                 await sql`
                     UPDATE users 
-                    SET tokens = ${newTotalTokens}, updated_at = CURRENT_TIMESTAMP
+                    SET tokens = ${newTotalCents}, updated_at = CURRENT_TIMESTAMP
                     WHERE email = ${email}
                 `;
                 
                 isNewUser = false;
-                console.log(`Updated existing user ${email}: ${currentTokens} + ${tokensToAdd} = ${newTotalTokens} tokens`);
+                console.log(`Updated existing user ${email}: $${(currentCents/100).toFixed(2)} + $${(centsToAdd/100).toFixed(2)} = $${(newTotalCents/100).toFixed(2)}`);
             } else {
-                // New user - create with tokens
+                // New user - create with cents
                 await sql`
                     INSERT INTO users (email, tokens, created_at, updated_at)
-                    VALUES (${email}, ${tokensToAdd}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    VALUES (${email}, ${centsToAdd}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 `;
                 
-                newTotalTokens = tokensToAdd;
+                newTotalCents = centsToAdd;
                 isNewUser = true;
-                console.log(`Created new user ${email} with ${tokensToAdd} tokens`);
+                console.log(`Created new user ${email} with $${(centsToAdd/100).toFixed(2)}`);
             }
             
             // Send confirmation email
@@ -107,8 +107,8 @@ exports.handler = async (event) => {
 Your payment was successful! Here's what you got:
 
 📦 Package: ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
-🪙 Tokens added: ${tokensToAdd}
-💰 Total tokens: ${newTotalTokens}
+💵 Credits added: $${(centsToAdd/100).toFixed(2)}
+💰 Total credits: $${(newTotalCents/100).toFixed(2)}
 
 You can now start creating amazing drawings at https://app.draw.superfun.games
 
@@ -116,11 +116,11 @@ Happy drawing!
 The Superfun Team`
                 : `✅ Payment Successful!
 
-Your token purchase was completed successfully:
+Your credit purchase was completed successfully:
 
 📦 Package: ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
-🪙 Tokens added: ${tokensToAdd}
-💰 New balance: ${newTotalTokens} tokens
+💵 Credits added: $${(centsToAdd/100).toFixed(2)}
+💰 New balance: $${(newTotalCents/100).toFixed(2)}
 
 Continue creating at https://app.draw.superfun.games
 
