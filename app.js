@@ -175,12 +175,7 @@ async function downloadAndDisplayVideo(videoId, canvas, drawGroup, centsUsed, ti
         try {
             console.log(`[Sora Download] Attempt ${attempt}/${maxDownloadAttempts}...`);
             
-            const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
-                headers: { 
-                    'Authorization': `Bearer ${window.OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const videoResponse = await fetch(`/.netlify/functions/sora-download?videoId=${videoId}`);
             
             if (!videoResponse.ok) {
                 const errorText = await videoResponse.text();
@@ -272,9 +267,7 @@ function showRetryButton(canvas, videoId, params) {
         retryBtn.textContent = 'Checking...';
         
         try {
-            const response = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
-                headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
-            });
+            const response = await fetch(`/.netlify/functions/sora-check-status?videoId=${videoId}`);
             
             if (!response.ok) throw new Error('Failed to check video status');
             
@@ -1309,11 +1302,7 @@ function attachButtonListeners(drawGroup) {
                         
                         console.log(`[Sora Poll ${pollCount}/${maxPolls}] Checking video status...`);
                         
-                        const statusResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
-                            headers: {
-                                'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-                            }
-                        });
+                        const statusResponse = await fetch(`/.netlify/functions/sora-check-status?videoId=${videoId}`);
                         
                         if (!statusResponse.ok) {
                             const errorText = await statusResponse.text();
@@ -1372,9 +1361,7 @@ function attachButtonListeners(drawGroup) {
                         await new Promise(resolve => setTimeout(resolve, 45000)); // Wait 45 seconds
                         
                         console.log('[Sora] Retry attempt - checking video status...');
-                        const retryResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
-                            headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
-                        });
+                        const retryResponse = await fetch(`/.netlify/functions/sora-check-status?videoId=${videoId}`);
                         
                         if (retryResponse.ok) {
                             const retryData = await retryResponse.json();
