@@ -1,4 +1,6 @@
 // Proxy function to check Sora video status (avoids CORS issues)
+const https = require('https');
+
 exports.handler = async function(event, context) {
   const videoId = event.queryStringParameters?.videoId;
   
@@ -9,29 +11,44 @@ exports.handler = async function(event, context) {
     };
   }
 
-  try {
-    const response = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.openai.com',
+      path: `/v1/videos/${videoId}`,
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API}`,
         'Content-Type': 'application/json'
       }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: data
+        });
+      });
     });
 
-    const data = await response.json();
+    req.on('error', (error) => {
+      resolve({
+        statusCode: 500,
+        body: JSON.stringify({ error: error.message })
+      });
+    });
 
-    return {
-      statusCode: response.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify(data)
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message })
-    };
-  }
+    req.end();
+  });
 };
 
