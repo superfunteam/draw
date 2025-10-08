@@ -168,54 +168,82 @@ function clearGenerationOverlay(canvas) {
 
 // Download and display video, deducting credits only on success
 async function downloadAndDisplayVideo(videoId, canvas, drawGroup, centsUsed, timerInterval) {
-    const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
-        headers: { 'Authorization': `Bearer ${window.OPENAI_API_KEY}` }
-    });
+    let lastError;
+    const maxDownloadAttempts = 3;
     
-    if (!videoResponse.ok) {
-        const errorText = await videoResponse.text();
-        console.error('[Sora] Download failed:', videoResponse.status, errorText);
-        throw new Error('Failed to download video');
+    for (let attempt = 1; attempt <= maxDownloadAttempts; attempt++) {
+        try {
+            console.log(`[Sora Download] Attempt ${attempt}/${maxDownloadAttempts}...`);
+            
+            const videoResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
+                headers: { 
+                    'Authorization': `Bearer ${window.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!videoResponse.ok) {
+                const errorText = await videoResponse.text();
+                console.error(`[Sora] Download attempt ${attempt} failed:`, videoResponse.status, errorText);
+                
+                if (attempt < maxDownloadAttempts) {
+                    console.log(`[Sora] Waiting 10 seconds before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    continue;
+                }
+                throw new Error(`Failed to download video after ${maxDownloadAttempts} attempts: ${errorText}`);
+            }
+            
+            // Success! Continue with download
+            const videoBlob = await videoResponse.blob();
+            const videoUrl = URL.createObjectURL(videoBlob);
+            
+            console.log('[Sora] Video downloaded successfully!');
+            console.log('[Sora] Video size:', (videoBlob.size / 1024 / 1024).toFixed(2), 'MB');
+            console.log('[Sora] Video type:', videoBlob.type);
+            
+            // Create video element
+            const videoElement = document.createElement('video');
+            videoElement.src = videoUrl;
+            videoElement.controls = true;
+            videoElement.autoplay = true;
+            videoElement.loop = true;
+            videoElement.classList.add('api-video', 'w-full', 'h-full', 'object-contain');
+            videoElement.style.maxHeight = '100%';
+            videoElement.dataset.videoBlobUrl = videoUrl;
+            
+            // Hide loader and add video to canvas
+            const loader = canvas.querySelector('.loader');
+            if (loader) loader.classList.add('hidden');
+            
+            canvas.appendChild(videoElement);
+            
+            // Show image actions (copy/download buttons)
+            const imageActions = drawGroup.querySelector('.image-actions');
+            if (imageActions) {
+                imageActions.classList.remove('hidden');
+            }
+            
+            // Deduct credits ONLY on successful download
+            console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for successful video`);
+            await deductTokens(centsUsed);
+            
+            // Stop timer and show cost
+            clearInterval(timerInterval);
+            showOverlayCost(canvas, centsUsed);
+            
+            return videoElement;
+            
+        } catch (error) {
+            lastError = error;
+            if (attempt < maxDownloadAttempts) {
+                console.log(`[Sora] Attempt ${attempt} failed, retrying...`, error.message);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+            }
+        }
     }
     
-    const videoBlob = await videoResponse.blob();
-    const videoUrl = URL.createObjectURL(videoBlob);
-    
-    console.log('[Sora] Video downloaded successfully!');
-    console.log('[Sora] Video size:', (videoBlob.size / 1024 / 1024).toFixed(2), 'MB');
-    console.log('[Sora] Video type:', videoBlob.type);
-    
-    // Create video element
-    const videoElement = document.createElement('video');
-    videoElement.src = videoUrl;
-    videoElement.controls = true;
-    videoElement.autoplay = true;
-    videoElement.loop = true;
-    videoElement.classList.add('api-video', 'w-full', 'h-full', 'object-contain');
-    videoElement.style.maxHeight = '100%';
-    videoElement.dataset.videoBlobUrl = videoUrl;
-    
-    // Hide loader and add video to canvas
-    const loader = canvas.querySelector('.loader');
-    if (loader) loader.classList.add('hidden');
-    
-    canvas.appendChild(videoElement);
-    
-    // Show image actions (copy/download buttons)
-    const imageActions = drawGroup.querySelector('.image-actions');
-    if (imageActions) {
-        imageActions.classList.remove('hidden');
-    }
-    
-    // Deduct credits ONLY on successful download
-    console.log(`[Sora] Deducting ${formatDollarAmount(centsUsed)} for successful video`);
-    await deductTokens(centsUsed);
-    
-    // Stop timer and show cost
-    clearInterval(timerInterval);
-    showOverlayCost(canvas, centsUsed);
-    
-    return videoElement;
+    throw lastError || new Error('Failed to download video');
 }
 
 // Show retry button UI for failed video generation
@@ -1273,7 +1301,7 @@ function attachButtonListeners(drawGroup) {
                     const maxPolls = 120; // 10 minutes max (120 * 5 seconds)
                     let finalStatusData = videoJob;
                     let stuckAt100Count = 0;
-                    const maxStuckAt100 = 3; // If stuck at 100% for 3 polls (15 seconds), try to download
+                    const maxStuckAt100 = 2; // If stuck at 100% for 2 polls (10 seconds), force download
                     
                     while ((videoStatus === 'queued' || videoStatus === 'in_progress') && pollCount < maxPolls) {
                         await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -1310,31 +1338,12 @@ function attachButtonListeners(drawGroup) {
                             stuckAt100Count++;
                             console.log(`[Sora Poll] At 100% but still in_progress (${stuckAt100Count}/${maxStuckAt100})...`);
                             
-                            // If stuck at 100% for several polls, try to download anyway
+                            // If stuck at 100% for 2 polls (10 seconds), force download attempt
                             if (stuckAt100Count >= maxStuckAt100) {
-                                console.log('[Sora Poll] Stuck at 100% for too long, attempting early download...');
-                                // Try to fetch the video - if it's ready, it will work
-                                // If not, we'll continue polling
-                                try {
-                                    const testDownloadResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
-                                        method: 'HEAD', // Just check if it's available
-                                        headers: {
-                                            'Authorization': `Bearer ${window.OPENAI_API_KEY}`
-                                        }
-                                    });
-                                    
-                                    if (testDownloadResponse.ok) {
-                                        console.log('[Sora Poll] Video is available for download! Breaking out of polling loop.');
-                                        videoStatus = 'completed'; // Force completion
-                                        break;
-                                    } else {
-                                        console.log('[Sora Poll] Video not yet available, continuing to poll...');
-                                        stuckAt100Count = 0; // Reset counter and keep trying
-                                    }
-                                } catch (testError) {
-                                    console.log('[Sora Poll] Download test failed, continuing to poll...', testError.message);
-                                    stuckAt100Count = 0; // Reset counter
-                                }
+                                console.log('[Sora Poll] Stuck at 100%, forcing completion and attempting download...');
+                                videoStatus = 'completed'; // Force status change
+                                finalStatusData.status = 'completed';
+                                break; // Exit polling loop and proceed to download
                             }
                         } else {
                             stuckAt100Count = 0; // Reset if not at 100%
