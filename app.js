@@ -1432,6 +1432,7 @@ function attachButtonListeners(drawGroup) {
                 let response;
                 let requestBody;
                 let apiEndpoint;
+                let modelValue = "gpt-image-1"; // Default model for images
 
                 if (imageReferences.length > 0) {
                     console.log(`Using ${imageReferences.length} reference image(s) with /responses API...`);
@@ -1471,7 +1472,7 @@ function attachButtonListeners(drawGroup) {
                     console.log('No reference images. Using standard image generation API...');
                     
                     requestBody = {
-                        model: "gpt-image-1",
+                        model: modelValue,
                         size: imageSize,
                         quality: qualityValue,
                         output_format: "png",
